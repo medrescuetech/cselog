@@ -1,0 +1,32 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# PHP / Laravel (for when the app lands)
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/public/maps
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+*.log
+
+# Map assets — large binaries, kept off git
+*.tif
+*.tiff
+*.geotiff
+/maps
+/tiles
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
