@@ -150,6 +150,12 @@ is inside *Tank Farm B*"), and reused when the base image is replaced with a new
 
 Full detail: [`docs/04-map-and-georeferencing.md`](docs/04-map-and-georeferencing.md).
 
+**Limited mapping data is not a blocker.** GMC has flagged that little map data exists — see
+[`docs/09-minimum-mapping-data.md`](docs/09-minimum-mapping-data.md) for the tiered plan. In
+short: a photo of a plan on the wall, or even satellite imagery with hand-drawn boundaries, is
+enough to run the whole thing; the site map is then built up by drawing areas/landmarks and by
+the location catalogue accumulating from normal use.
+
 ## 6. Data model (sketch)
 
 ```
@@ -179,7 +185,7 @@ Full DDL sketch: [`docs/03-data-model.md`](docs/03-data-model.md).
 | 1 | Log form, work types, open board, close-out, history + CSV | ~1 session |
 | 2 | Image map (CRS.Simple), pin drop, "save this location?", catalogue picker | ~1 session |
 | 3 | Landmarks + boundaries editor, layer toggles, pin-in-area labelling | ~0.5–1 session |
-| 4 | Georeferencing + satellite basemap, tiled large images | ~1 session |
+| 4 | Georeferencing + satellite basemap, tiled large images *(optional — see docs/09)* | ~1 session |
 | 5 | Wallboard mode, overdue alerts (email/SMS), reports, offline-tolerant form | ~1 session |
 
 ("Session" = one continuous Devin working session, not a person-week.)
@@ -191,6 +197,7 @@ for the full list. The ones that matter most:
 
 1. How many sites, and roughly how many open entries at once / per day?
 2. What map data actually exists — image only, PDF, shapefile/DWG, GeoTIFF, an ArcGIS/QGIS export?
+   (GMC: limited — the plan for that is `docs/09-minimum-mapping-data.md`.)
 3. Who logs the call: one controller at a desk, or multiple people on phones in the field?
 4. Does this need to feed or replace an existing permit-to-work system?
 5. Any regulatory retention/audit requirement on the records (and for how long)?
@@ -208,5 +215,6 @@ docs/05-workflows-and-ui.md    screen-by-screen flows and wireframe notes
 docs/06-location-lifecycle.md  how the changing location catalogue is kept sane
 docs/07-open-questions.md      what we need from GMC to finalise
 docs/08-deployment-cpanel.md   cPanel + GitHub deploy pipeline
+docs/09-minimum-mapping-data.md how to build this with little or no map data
 docs/NOTES.md                  running notes, ideas, things deliberately excluded
 ```
