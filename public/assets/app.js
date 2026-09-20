@@ -19,6 +19,16 @@
         return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json());
     };
 
+    /* The bundle loads in <head> so page scripts can call it, so anything that
+       touches the document waits for the parser. */
+    function ready(fn) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fn);
+        } else {
+            fn();
+        }
+    }
+
     CseLog.hhmm = function (seconds) {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
@@ -46,19 +56,21 @@
         });
     }
 
-    if (document.querySelector('[data-age-seconds]')) {
-        setInterval(tickClocks, 1000);
-    }
+    ready(() => {
+        if (document.querySelector('[data-age-seconds]')) {
+            setInterval(tickClocks, 1000);
+        }
 
-    /* Reload the board periodically so new radio calls appear on every screen. */
-    const autoRefresh = document.body.dataset.refresh;
-    if (autoRefresh) {
-        setInterval(() => {
-            if (!document.querySelector('.combo-list:not([hidden])')) {
-                window.location.reload();
-            }
-        }, parseInt(autoRefresh, 10) * 1000);
-    }
+        /* Reload the board periodically so new radio calls appear on every screen. */
+        const autoRefresh = document.body.dataset.refresh;
+        if (autoRefresh) {
+            setInterval(() => {
+                if (!document.querySelector('.combo-list:not([hidden])')) {
+                    window.location.reload();
+                }
+            }, parseInt(autoRefresh, 10) * 1000);
+        }
+    });
 
     /* ── Image map ──────────────────────────────────────────────────────── */
 

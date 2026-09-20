@@ -24,6 +24,8 @@ $current = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 <link rel="stylesheet" href="/assets/vendor/leaflet.css">
 <link rel="stylesheet" href="/assets/app.css">
 <meta name="csrf-token" content="<?= Support::e(Http::csrfToken()) ?>">
+<script src="/assets/vendor/leaflet.js"></script>
+<script src="/assets/app.js"></script>
 </head>
 <body data-amber-hours="<?= Config::int('ALERT_AMBER_HOURS', 2) ?>" data-red-hours="<?= Config::int('ALERT_RED_HOURS', 4) ?>"<?= ($autoRefresh ?? false) ? ' data-refresh="' . Config::int('REFRESH_SECONDS', 30) . '"' : '' ?>>
 <header class="topbar">
@@ -56,7 +58,5 @@ $current = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     <?= $content ?>
 </main>
 
-<script src="/assets/vendor/leaflet.js"></script>
-<script src="/assets/app.js"></script>
 </body>
 </html>
