@@ -149,7 +149,7 @@ final class EntryController
 
         $areaId = Repo::areaAt((int) $map['id'], $x, $y);
 
-        Db::transaction(static function () use ($entry, $map, $x, $y, $areaId, $save, $name): void {
+        $placed = Db::transaction(static function () use ($entry, $map, $x, $y, $areaId, $save, $name): bool {
             $locationId = null;
 
             if ($save) {
@@ -179,19 +179,38 @@ final class EntryController
                 Repo::touchLocation($locationId);
             }
 
-            Db::update('entries', [
-                'location_id' => $locationId,
-                'location_label' => $save ? $name : (Http::input('adhoc_label') ?: 'Dropped pin'),
-                'x' => $x,
-                'y' => $y,
-                'area_id' => $areaId,
-            ], ['id' => (int) $entry['id']]);
+            // Only an entry that is still awaiting its pin may be written to,
+            // so two concurrent submits cannot both place a pin.
+            $rows = Db::run(
+                "UPDATE entries
+                    SET location_id = ?, location_label = ?, x = ?, y = ?, area_id = ?
+                  WHERE id = ? AND status = 'open' AND location_id IS NULL AND x IS NULL AND y IS NULL",
+                [
+                    $locationId,
+                    $save ? $name : (Http::input('adhoc_label') ?: 'Dropped pin'),
+                    $x,
+                    $y,
+                    $areaId,
+                    (int) $entry['id'],
+                ]
+            )->rowCount();
+
+            if ($rows === 0) {
+                return false;
+            }
 
             Repo::logEvent((int) $entry['id'], 'updated', [
                 'pin' => ['x' => $x, 'y' => $y],
                 'location_saved' => $save ? $name : false,
             ]);
+
+            return true;
         });
+
+        if (!$placed) {
+            Http::flash('That entry already has a location — edit it from the entry page.', 'error');
+            Http::redirect('/entries/' . $entry['id']);
+        }
 
         Http::flash($save
             ? 'Pin placed and "' . $name . '" saved to the location list.'
@@ -206,6 +225,11 @@ final class EntryController
         if ($entry['status'] !== 'open') {
             Http::flash('That entry is already ' . $entry['status'] . '.', 'error');
             Http::redirect('/board');
+        }
+
+        if ($entry['x'] === null && $entry['location_id'] === null) {
+            Http::flash('Place the pin before closing this entry.', 'error');
+            Http::redirect('/entries/' . $entry['id'] . '/pin');
         }
 
         Db::update('entries', [
