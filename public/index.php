@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+// Used as the router script of PHP's built-in server, this file must hand
+// existing files (assets, map images) back to the server itself. Apache never
+// reaches here for them.
+if (PHP_SAPI === 'cli-server') {
+    $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+    if ($path !== '/index.php' && is_file(__DIR__ . $path)) {
+        return false;
+    }
+}
+
 require dirname(__DIR__) . '/src/bootstrap.php';
 
 use CseLog\Auth;
