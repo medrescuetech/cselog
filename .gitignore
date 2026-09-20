@@ -3,19 +3,26 @@
 .env.*
 !.env.example
 
-# PHP / Laravel (for when the app lands)
+# PHP
 /vendor
 /node_modules
 /public/build
 /public/hot
 /public/storage
-/public/maps
-/storage/*.key
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/views/*
-/storage/logs/*
+/storage/*
+!/storage/.gitkeep
 *.log
+
+# Uploaded site maps (the placeholder ships with the repo)
+/public/maps/*
+!/public/maps/placeholder-site.svg
+!/public/maps/.htaccess
+
+# Local databases
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 
 # Map assets — large binaries, kept off git
 *.tif

@@ -1,0 +1,14 @@
+# Uploaded site maps are user-supplied documents. Even though SVG uploads are
+# screened for active content, serve everything here inert and sandboxed.
+<IfModule mod_headers.c>
+    Header set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+<FilesMatch "\.(php|phtml|phar|html?|js)$">
+    Require all denied
+</FilesMatch>
