@@ -1,0 +1,19 @@
+---
+# cPanel Git Version Control deployment.
+# Set DEPLOYPATH to the docroot that serves this app, then run "Update from
+# Remote" + "Deploy HEAD Commit" in cPanel (or push to the remote if a
+# post-receive deploy is enabled).
+#
+# The application is served from public/, so the docroot should point at
+# <DEPLOYPATH>/public. .env, storage/ and public/maps/ are deliberately not
+# overwritten — they hold live configuration, the database and uploaded maps.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/CPANELUSER/cselog
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R bin src views schema $DEPLOYPATH
+    - /bin/cp -R public/assets public/index.php public/.htaccess $DEPLOYPATH/public
+    - /bin/mkdir -p $DEPLOYPATH/public/maps $DEPLOYPATH/storage
+    - /bin/cp public/maps/placeholder-site.svg $DEPLOYPATH/public/maps
+    - /bin/cp .env.example $DEPLOYPATH/.env.example
+    - /bin/chmod -R 755 $DEPLOYPATH

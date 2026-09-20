@@ -3,8 +3,9 @@
 A web-based log and live map for tracking open work locations on a site (primarily confined
 space entries) that are called in by radio.
 
-**Status:** specification / design. No application code yet — this repo currently holds the
-solution document and supporting notes.
+**Status:** working application (phases 0–3 + 5 partial) running against a **placeholder site
+map** that is swapped for the real image in Admin → Maps. Georeferencing and a satellite basemap
+(phase 4) remain optional future work. See [Running it](#running-it) below.
 
 ---
 
@@ -114,9 +115,9 @@ Chosen to match the constraint: **cPanel shared hosting, deployed from GitHub**.
 | Layer | Choice | Why |
 |---|---|---|
 | Runtime | PHP 8.2+ | The one thing cPanel always runs well; no Node daemon/Passenger fragility. |
-| Framework | Laravel 11 (+ Breeze auth) | Batteries included: auth, migrations, validation, queue, scheduler, CSV export. Deploys fine on cPanel with the docroot pointed at `public/`. |
+| Framework | **None — plain PHP + PDO** (small router / controller / view layer in `src/`) | Chosen over Laravel once the app was built: no Composer, no `vendor/`, no build step, so a cPanel deploy is a file copy. Laravel remains a clean migration path if the scope grows. |
 | DB | MySQL 8 / MariaDB 10.6+ | Included with cPanel. Spatial types available if wanted; not required. |
-| UI | Blade + Alpine.js + Tailwind (built assets committed or built in deploy) | No SPA build server needed; fast on a phone over patchy site wifi/4G. |
+| UI | PHP templates + hand-written CSS/JS, no build step | Nothing to compile; fast on a phone over patchy site wifi/4G. |
 | Map | **Leaflet 1.9** | Handles both a plain image (`L.CRS.Simple` + `ImageOverlay`) and real geographic layers (satellite tiles + georeferenced overlay) — the same library covers both phases. |
 | Drawing | Leaflet-Geoman (or Leaflet.draw) | Landmarks, boundary polygons, freehand areas. |
 | Big images | `gdal2tiles` / `vips dzsave` pre-tiling, served as static tiles | A 200 MB survey raster can't be a single `ImageOverlay`; tiles keep mobile usable. |
@@ -125,6 +126,26 @@ Chosen to match the constraint: **cPanel shared hosting, deployed from GitHub**.
 **Deliberately not chosen:** Next.js/Node on cPanel (Passenger apps break on shared hosts and on
 PHP-version changes), a no-code platform (can't do the custom image map + pin save flow), and
 PostGIS (not available on standard cPanel).
+
+## Running it
+
+Local (SQLite, no services to install):
+
+```bash
+php bin/install.php --demo --admin-pass='devpass123'   # writes .env, schema, seed data
+php -S 127.0.0.1:8000 -t public public/index.php
+```
+
+Then open <http://127.0.0.1:8000> and log in as `admin`. `--demo` seeds locations, areas,
+landmarks and a handful of open/closed entries; drop it for a clean install.
+
+Production on cPanel is the same installer against MySQL — see
+[`docs/08-deployment-cpanel.md`](docs/08-deployment-cpanel.md) and `.cpanel.yml`.
+
+**Swapping in the real map:** Admin → Maps → upload any image (survey plan, GIS export,
+satellite screenshot, phone photo of the plan on the wall) → make it the default, then draw the
+boundaries and landmarks in Admin → Landmarks & boundaries. Pins are stored in the image's own
+pixel space, so no georeferencing is needed.
 
 See [`docs/02-architecture.md`](docs/02-architecture.md) for detail and
 [`docs/08-deployment-cpanel.md`](docs/08-deployment-cpanel.md) for the cPanel + GitHub deploy
@@ -179,14 +200,14 @@ Full DDL sketch: [`docs/03-data-model.md`](docs/03-data-model.md).
 
 ## 7. Delivery plan
 
-| Phase | Scope | Rough effort |
+| Phase | Scope | Status |
 |---|---|---|
-| 0 | Repo, hosting, cPanel↔GitHub deploy, Laravel skeleton, auth | ~0.5 session |
-| 1 | Log form, work types, open board, close-out, history + CSV | ~1 session |
-| 2 | Image map (CRS.Simple), pin drop, "save this location?", catalogue picker | ~1 session |
-| 3 | Landmarks + boundaries editor, layer toggles, pin-in-area labelling | ~0.5–1 session |
-| 4 | Georeferencing + satellite basemap, tiled large images *(optional — see docs/09)* | ~1 session |
-| 5 | Wallboard mode, overdue alerts (email/SMS), reports, offline-tolerant form | ~1 session |
+| 0 | Repo, cPanel↔GitHub deploy, app skeleton, auth + roles | done |
+| 1 | Log form, work types, open board, close-out, history + CSV | done |
+| 2 | Image map (CRS.Simple), pin drop, "save this location?", catalogue picker | done |
+| 3 | Landmarks + boundaries editor, layer toggles, pin-in-area labelling | done |
+| 4 | Georeferencing + satellite basemap, tiled large images *(optional — see docs/09)* | not started |
+| 5 | Overdue escalation (amber/red), shift report | done; email/SMS alerts + offline form not started |
 
 ("Session" = one continuous Devin working session, not a person-week.)
 
@@ -207,6 +228,13 @@ for the full list. The ones that matter most:
 
 ```
 README.md                      ← this document
+bin/install.php                installer: schema, seed data, admin user, --demo
+schema/schema.sql              portable DDL (SQLite + MySQL via placeholders)
+src/                           Config, Db, Router, Auth, Http, Support, Repo, Controllers/
+views/                         PHP templates (board, log, pin, map, history, admin/…)
+public/                        docroot: index.php front controller, .htaccess, assets/, maps/
+public/maps/placeholder-site.svg  stand-in site plan until the real image is uploaded
+.cpanel.yml                    cPanel Git Version Control deployment tasks
 docs/01-requirements.md        requirements captured from the brief, with assumptions marked
 docs/02-architecture.md        stack, components, alternatives considered
 docs/03-data-model.md          tables, DDL sketch, key design decisions

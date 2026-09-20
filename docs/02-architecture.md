@@ -1,5 +1,11 @@
 # 02 — Architecture
 
+> **As built:** the Laravel/Blade/Tailwind stack described below was replaced during
+> implementation with plain PHP 8.1+ and PDO (`src/Router.php`, `src/Db.php`, `views/*.php`) and
+> a vendored Leaflet, so the deploy has no Composer, no `vendor/` and no build step. Everything
+> else here — the constraints, the component split, the polling model, the map approach — still
+> describes the running app.
+
 ## Constraints driving the design
 
 1. **cPanel shared hosting.** No root, no long-running daemons you can trust, PHP is the
