@@ -16,13 +16,15 @@ final class HistoryController
         $site = Repo::site();
         [$sql, $params] = $this->buildQuery((int) $site['id']);
         $rows = Db::all($sql . ' ORDER BY e.opened_at DESC LIMIT 500', $params);
+        $areas = Repo::siteAreas((int) $site['id']);
 
         Http::render('history', [
             'title' => 'History',
             'site' => $site,
             'rows' => $this->decorate($rows),
             'workTypes' => Repo::workTypes(false),
-            'areas' => Repo::areas((int) Repo::map()['id']),
+            'areas' => $areas,
+            'mapNames' => array_unique(array_column($areas, 'map_name')),
             'filters' => $this->filters(),
             'summary' => $this->summary($rows),
         ]);

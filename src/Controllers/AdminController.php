@@ -132,6 +132,13 @@ final class AdminController
             Http::redirect('/admin/maps');
         }
 
+        // An SVG is a document, not just pixels: served from our own origin it
+        // would run any script it carries. Reject anything active outright.
+        if ($mime === 'image/svg+xml' && self::svgIsActive((string) file_get_contents($file['tmp_name']))) {
+            Http::flash('That SVG contains scripting or external references. Export it as PNG instead.', 'error');
+            Http::redirect('/admin/maps');
+        }
+
         $width = Http::intInput('width_px');
         $height = Http::intInput('height_px');
 
@@ -171,6 +178,15 @@ final class AdminController
         Http::redirect('/admin/maps?map=' . $mapId);
     }
 
+    /** True when an SVG carries script, event handlers or remote references. */
+    private static function svgIsActive(string $svg): bool
+    {
+        return preg_match(
+            '/<\s*(script|foreignObject|iframe|embed|object|handler|set|animate)\b|\bon[a-z]+\s*=|javascript:|<!ENTITY|xlink:href\s*=\s*["\']\s*(?!#)/i',
+            $svg
+        ) === 1;
+    }
+
     public function mapUpdate(array $params): void
     {
         $id = (int) $params['id'];
@@ -181,9 +197,37 @@ final class AdminController
             Db::update('maps', ['is_default' => 1, 'active' => 1], ['id' => $id]);
             Http::flash('Default map updated. New pins will use it.');
         } elseif ($action === 'toggle') {
-            $map = Db::first('SELECT active FROM maps WHERE id = ?', [$id]);
-            Db::update('maps', ['active' => (int) $map['active'] === 1 ? 0 : 1], ['id' => $id]);
-            Http::flash('Map visibility updated.');
+            $hidden = Db::transaction(static function () use ($id): bool {
+                $map = Db::first('SELECT active, is_default FROM maps WHERE id = ?', [$id]);
+                if ($map === null) {
+                    Http::notFound('Map not found.');
+                }
+
+                if ((int) $map['active'] === 0) {
+                    Db::update('maps', ['active' => 1], ['id' => $id]);
+
+                    return true;
+                }
+
+                // The app resolves an active map on nearly every screen, so the
+                // default (or last remaining) map cannot be hidden.
+                $othersActive = (int) Db::value('SELECT COUNT(*) FROM maps WHERE active = 1 AND id <> ?', [$id]);
+
+                if ((int) $map['is_default'] === 1 || $othersActive === 0) {
+                    return false;
+                }
+
+                Db::update('maps', ['active' => 0], ['id' => $id]);
+
+                return true;
+            });
+
+            Http::flash(
+                $hidden
+                    ? 'Map visibility updated.'
+                    : 'Make another map the default first — the app needs one active map.',
+                $hidden ? 'ok' : 'error'
+            );
         } else {
             Db::update('maps', ['name' => (string) Http::input('name')], ['id' => $id]);
             Http::flash('Saved.');

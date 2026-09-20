@@ -17,10 +17,32 @@ final class Auth
             session_set_cookie_params([
                 'httponly' => true,
                 'samesite' => 'Lax',
-                'secure' => ($_SERVER['HTTPS'] ?? '') === 'on',
+                'secure' => self::isHttps(),
             ]);
             session_start();
         }
+    }
+
+    /**
+     * TLS is commonly terminated by a proxy on cPanel, so $_SERVER['HTTPS'] is
+     * not enough on its own. FORCE_HTTPS=true pins it for hosts that forward
+     * nothing useful.
+     */
+    private static function isHttps(): bool
+    {
+        if (Config::bool('FORCE_HTTPS', false)) {
+            return true;
+        }
+
+        if (($_SERVER['HTTPS'] ?? '') !== '' && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
+            return true;
+        }
+
+        if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
+            return true;
+        }
+
+        return (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
     }
 
     /** @return array<string, mixed>|null */
@@ -42,11 +64,20 @@ final class Auth
 
     public static function attempt(string $username, string $password): bool
     {
-        $user = Db::first('SELECT * FROM users WHERE username = ? AND active = 1', [strtolower(trim($username))]);
-        if ($user === null || !password_verify($password, (string) $user['password_hash'])) {
+        $username = strtolower(trim($username));
+
+        if (Throttle::isLocked($username)) {
             return false;
         }
 
+        $user = Db::first('SELECT * FROM users WHERE username = ? AND active = 1', [$username]);
+        if ($user === null || !password_verify($password, (string) $user['password_hash'])) {
+            Throttle::fail($username);
+
+            return false;
+        }
+
+        Throttle::clear($username);
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
         self::$user = $user;

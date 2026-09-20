@@ -52,6 +52,24 @@ final class Repo
         return Db::all('SELECT * FROM areas WHERE map_id = ? AND active = 1 ORDER BY name', [$mapId]);
     }
 
+    /**
+     * Every area the site has ever had, including those on retired maps, so a
+     * history filter can still reach entries logged against them.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function siteAreas(int $siteId): array
+    {
+        return Db::all(
+            'SELECT a.*, m.name AS map_name
+               FROM areas a
+               JOIN maps m ON m.id = a.map_id
+              WHERE m.site_id = ?
+              ORDER BY m.is_default DESC, m.name, a.name',
+            [$siteId]
+        );
+    }
+
     /** @return array<int, array<string, mixed>> */
     public static function landmarks(int $mapId): array
     {

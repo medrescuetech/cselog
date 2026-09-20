@@ -58,7 +58,9 @@ use CseLog\Support;
                 if (focusId && String(entry.id) === focusId) focused = marker;
             });
 
-            const missing = payload.entries.length - placed;
+            const missing = payload.entries.filter(entry =>
+                entry.map_id === <?= (int) $map['id'] ?> && entry.x === null
+            ).length;
             status.textContent = placed + ' open on this map' +
                 (missing > 0 ? ' · ' + missing + ' without a pin' : '') +
                 ' · updated ' + payload.server_time;

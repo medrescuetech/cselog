@@ -34,13 +34,15 @@ final class EntryController
         $site = Repo::site();
         $map = Repo::map(Http::intInput('map_id'));
         $workTypeId = Http::intInput('work_type_id');
-        $workType = $workTypeId === null ? null : Db::first('SELECT * FROM work_types WHERE id = ?', [$workTypeId]);
+        $workType = $workTypeId === null
+            ? null
+            : Db::first('SELECT * FROM work_types WHERE id = ? AND active = 1', [$workTypeId]);
         $notes = Http::input('notes', '');
         $newLocation = Http::input('location_mode') === 'new';
         $locationId = $newLocation ? null : Http::intInput('location_id');
 
         if ($workType === null) {
-            Http::flash('Choose a work type.', 'error');
+            Http::flash('Choose a work type — that one is no longer available.', 'error');
             Http::redirect('/log');
         }
 
@@ -54,9 +56,13 @@ final class EntryController
             Http::redirect('/log');
         }
 
-        $location = $locationId === null ? null : Db::first('SELECT * FROM locations WHERE id = ?', [$locationId]);
+        $location = $locationId === null ? null : Db::first(
+            "SELECT * FROM locations
+              WHERE id = ? AND site_id = ? AND status = 'active' AND merged_into_id IS NULL",
+            [$locationId, (int) $site['id']]
+        );
         if ($locationId !== null && $location === null) {
-            Http::flash('That location no longer exists.', 'error');
+            Http::flash('That location has been archived or merged — pick another.', 'error');
             Http::redirect('/log');
         }
 
@@ -68,7 +74,9 @@ final class EntryController
         $entryId = Db::transaction(static function () use ($site, $map, $location, $workType, $notes, $openedAt): int {
             $entryId = Db::insert('entries', [
                 'site_id' => (int) $site['id'],
-                'map_id' => (int) $map['id'],
+                // A catalogue location keeps the map its pin was placed on; only a
+                // brand-new pin belongs to the map chosen on the form.
+                'map_id' => (int) ($location['map_id'] ?? $map['id']),
                 'location_id' => $location['id'] ?? null,
                 'location_label' => $location['name'] ?? 'Pin pending',
                 'x' => $location['x'] ?? null,
@@ -106,7 +114,7 @@ final class EntryController
     /** Pin-drop screen shown after logging against a new location. */
     public function pinForm(array $params): void
     {
-        $entry = $this->findEntry((int) $params['id']);
+        $entry = $this->findPendingPinEntry((int) $params['id']);
         $map = Repo::map((int) $entry['map_id']);
 
         Http::render('pin', [
@@ -121,7 +129,7 @@ final class EntryController
     /** Saves the dropped pin, optionally promoting it to the location catalogue. */
     public function pinStore(array $params): void
     {
-        $entry = $this->findEntry((int) $params['id']);
+        $entry = $this->findPendingPinEntry((int) $params['id']);
         $map = Repo::map((int) $entry['map_id']);
         $x = Http::floatInput('x');
         $y = Http::floatInput('y');
@@ -286,6 +294,24 @@ final class EntryController
         $entry = Db::first('SELECT * FROM entries WHERE id = ?', [$id]);
         if ($entry === null) {
             Http::notFound('Entry not found.');
+        }
+
+        return $entry;
+    }
+
+    /**
+     * An open entry still awaiting its first pin. Anything already pinned is a
+     * historical record and is moved through the location catalogue instead.
+     *
+     * @return array<string, mixed>
+     */
+    private function findPendingPinEntry(int $id): array
+    {
+        $entry = $this->findEntry($id);
+
+        if ($entry['status'] !== 'open' || $entry['location_id'] !== null || $entry['x'] !== null) {
+            Http::flash('That entry already has a location — edit it from the entry page.', 'error');
+            Http::redirect('/entries/' . $id);
         }
 
         return $entry;

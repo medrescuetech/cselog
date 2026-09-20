@@ -159,6 +159,21 @@ final class Db
         $sql = (string) preg_replace('/^\s*--.*$/m', '', $sql);
 
         foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+            if ($mysql && preg_match('/^CREATE INDEX IF NOT EXISTS (\w+) ON (\w+)/i', $statement, $m) === 1) {
+                // MySQL has no CREATE INDEX ... IF NOT EXISTS; emulate it.
+                $exists = self::value(
+                    'SELECT COUNT(*) FROM information_schema.statistics
+                      WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?',
+                    [$m[2], $m[1]]
+                );
+
+                if ((int) $exists > 0) {
+                    continue;
+                }
+
+                $statement = (string) preg_replace('/^CREATE INDEX IF NOT EXISTS /i', 'CREATE INDEX ', $statement);
+            }
+
             self::pdo()->exec($statement);
         }
     }

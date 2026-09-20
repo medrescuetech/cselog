@@ -47,7 +47,7 @@ $query = http_build_query(array_filter($filters, static fn (string $v): bool => 
                 <option value="">Any</option>
                 <?php foreach ($areas as $area): ?>
                     <option value="<?= (int) $area['id'] ?>" <?= $filters['area_id'] === (string) $area['id'] ? 'selected' : '' ?>>
-                        <?= Support::e($area['name']) ?>
+                        <?= Support::e($area['name']) ?><?= count($mapNames) > 1 ? ' · ' . Support::e((string) $area['map_name']) : '' ?>
                     </option>
                 <?php endforeach; ?>
             </select>

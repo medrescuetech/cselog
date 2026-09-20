@@ -7,6 +7,7 @@ namespace CseLog\Controllers;
 use CseLog\Auth;
 use CseLog\Db;
 use CseLog\Http;
+use CseLog\Throttle;
 
 final class AuthController
 {
@@ -25,8 +26,14 @@ final class AuthController
     {
         Http::verifyCsrf();
 
-        if (!Auth::attempt((string) Http::input('username', ''), (string) Http::input('password', ''))) {
-            Http::flash('Wrong username or password.', 'error');
+        $username = (string) Http::input('username', '');
+
+        if (!Auth::attempt($username, (string) Http::input('password', ''))) {
+            $wait = Throttle::retryInSeconds($username);
+
+            Http::flash($wait > 0
+                ? 'Too many failed attempts. Try again in ' . (int) ceil($wait / 60) . ' minutes.'
+                : 'Wrong username or password.', 'error');
             Http::redirect('/login');
         }
 
