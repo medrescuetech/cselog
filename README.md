@@ -188,6 +188,10 @@ Full DDL sketch: [`docs/03-data-model.md`](docs/03-data-model.md).
 | 4 | Georeferencing + satellite basemap, tiled large images *(optional — see docs/09)* | ~1 session |
 | 5 | Wallboard mode, overdue alerts (email/SMS), reports, offline-tolerant form | ~1 session |
 
+**Superseded:** with real map data now in hand, the current plan is
+[`docs/11-build-plan.md`](docs/11-build-plan.md) (two map layers on one MGA50 coordinate system,
+imagery georeferenced from world files, phases re-cut).
+
 ("Session" = one continuous Devin working session, not a person-week.)
 
 ## 8. Open questions
@@ -218,6 +222,8 @@ docs/07-open-questions.md      what we need from GMC to finalise
 docs/08-deployment-cpanel.md   cPanel + GitHub deploy pipeline
 docs/09-minimum-mapping-data.md how to build this with little or no map data
 docs/10-site-map-sources.md    the map sources actually received (PDF + ArcGIS Online)
-docs/maps/                     source map files (SCJV site map PDF)
+docs/11-build-plan.md          the consolidated build plan (current)
+docs/maps/                     map assets: georeferenced imagery, boundary GeoJSON, PDFs
+tools/arcgis/fetch_arcgis.py   pulls imagery/features out of the PR25 ArcGIS web map
 docs/NOTES.md                  running notes, ideas, things deliberately excluded
 ```
