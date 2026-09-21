@@ -1,0 +1,16 @@
+{
+  "service": "https://tiles-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/NEARMAP_BurrupTilesCombined_Raster/MapServer",
+  "name": "NEARMAP_BurrupTilesCombined_Raster",
+  "description": "October 2023 aerial imagery for Perdaman Urea Project",
+  "level": 15,
+  "resolution_m": 1.0093073368112884,
+  "crs": "EPSG:28350",
+  "width_px": 6400,
+  "height_px": 5632,
+  "extent_mga50": {
+    "xmin": 473127.1641830085,
+    "ymax": 7722163.644834207,
+    "xmax": 479586.73113860073,
+    "ymin": 7716479.225913286
+  }
+}

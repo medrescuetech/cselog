@@ -1,0 +1,16 @@
+{
+  "service": "https://tiles-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/2026SeptWk2SiteCF/MapServer",
+  "name": "2026SeptWk2SiteCF",
+  "description": "October 2023 aerial imagery for Perdaman Urea Project",
+  "level": 17,
+  "resolution_m": 0.2523268342028221,
+  "crs": "EPSG:28350",
+  "width_px": 4864,
+  "height_px": 7424,
+  "extent_mga50": {
+    "xmin": 475775.58663480077,
+    "ymax": 7719644.413721526,
+    "xmax": 477002.9043563633,
+    "ymin": 7717771.139304404
+  }
+}

@@ -35,13 +35,13 @@ Contents (~330 layers, all on the same ArcGIS org, projected MGA Zone 50, EPSG:2
 | Heritage, Geology, Flora, Fauna, Env | ~40 | Not needed for CSEM. |
 | Ground Disturbance Permit System | 2 | `PR25_GDP_Master`, `PR25_GDP_PermitRequest` — an existing permit-style spatial workflow on site. |
 
-Verified anonymously readable (no login):
-- Web map JSON: `https://enveng.maps.arcgis.com/sharing/rest/content/items/201f054f265c44209cc9924de14065f9/data?f=json`
-- Feature services, including `/query` (e.g. `PR25_CON_Overall/FeatureServer/0/query?where=1=1&f=geojson`)
-- Tile service metadata (`NEARMAP_BurrupTilesCombined_Raster/MapServer?f=json`). Actual tile
-  fetches still need a test with a correct z/y/x inside the extent.
+Verified anonymously readable (no login): web map JSON, feature service `/query`, and tile
+fetches. Imagery is updated **weekly** (Site C & F and LA44 drone captures; latest 14 Sep 2026).
 
-All can be consumed directly from Leaflet via `esri-leaflet`.
+**Cloned into the repo** with `tools/arcgis/fetch_arcgis.py` — see `docs/maps/README.md`:
+georeferenced JPEG + world file of the whole-site basemap (1 m/px) and the latest Site C/F
+capture (0.25 m/px), plus GeoJSON of the lease/project boundaries and the 142 named
+infrastructure polygons. Everything else can be consumed live via `esri-leaflet`.
 
 ## What this changes
 
@@ -62,7 +62,6 @@ All can be consumed directly from Leaflet via `esri-leaflet`.
 
 ## Open items
 
-- Confirm tile fetches work anonymously (metadata and feature queries already do).
 - Confirm the PDF drawing is the current revision and whether it covers all work areas or just
   the process plant.
 - Decide: base image = rasterised PDF (clean, legible labels) vs. Nearmap tiles (current, real)
