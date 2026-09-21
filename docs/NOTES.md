@@ -52,7 +52,9 @@ Cheap to change now, annoying later — worth five minutes of thought before Pha
 ## Next actions
 
 1. GMC answers the top of `07-open-questions.md` (map data, volume, hosting specifics).
-2. Send whatever map image exists — even a screenshot is enough to prototype the pin flow.
+2. ~~Send whatever map image exists~~ **Done** — SCJV site map PDF and the PR25 ArcGIS Online
+   web map received (`10-site-map-sources.md`). Remaining: confirm anonymous access to the
+   ArcGIS tile/feature services.
 3. Confirm the stack (or push back on it) and the phase order.
 4. Then Phase 0: Laravel skeleton + cPanel deploy pipeline proven end-to-end with a hello-world
    page, before any feature work.

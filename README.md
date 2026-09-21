@@ -197,7 +197,8 @@ for the full list. The ones that matter most:
 
 1. How many sites, and roughly how many open entries at once / per day?
 2. What map data actually exists — image only, PDF, shapefile/DWG, GeoTIFF, an ArcGIS/QGIS export?
-   (GMC: limited — the plan for that is `docs/09-minimum-mapping-data.md`.)
+   **Answered:** SCJV site map PDF + public ArcGIS Online web map (Nearmap tiles, plot plans,
+   lease boundaries) — see `docs/10-site-map-sources.md`. `docs/09` is now the fallback plan.
 3. Who logs the call: one controller at a desk, or multiple people on phones in the field?
 4. Does this need to feed or replace an existing permit-to-work system?
 5. Any regulatory retention/audit requirement on the records (and for how long)?
@@ -216,5 +217,7 @@ docs/06-location-lifecycle.md  how the changing location catalogue is kept sane
 docs/07-open-questions.md      what we need from GMC to finalise
 docs/08-deployment-cpanel.md   cPanel + GitHub deploy pipeline
 docs/09-minimum-mapping-data.md how to build this with little or no map data
+docs/10-site-map-sources.md    the map sources actually received (PDF + ArcGIS Online)
+docs/maps/                     source map files (SCJV site map PDF)
 docs/NOTES.md                  running notes, ideas, things deliberately excluded
 ```
