@@ -1,0 +1,24 @@
+{
+  "source": "Site_F_Map_SCJV_2_9.26_300dpi.png",
+  "crs": "EPSG:28350",
+  "print_scale": 3815.0,
+  "dpi": 300,
+  "resolution_m": 0.3230033333333333,
+  "width_px": 4729,
+  "height_px": 2504,
+  "frame_px_in_source": [
+    116,
+    258,
+    4845,
+    2762
+  ],
+  "extent_mga50": {
+    "xmin": 475736.58663480077,
+    "ymax": 7718672.413721526,
+    "xmax": 477264.0693981341,
+    "ymin": 7717863.613374859
+  },
+  "registered_against": "plotplan-overall-2025_L17_0.25m.png",
+  "correlation_peak": 0.11614745855331421,
+  "masked_mga50": null
+}

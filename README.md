@@ -223,7 +223,8 @@ docs/08-deployment-cpanel.md   cPanel + GitHub deploy pipeline
 docs/09-minimum-mapping-data.md how to build this with little or no map data
 docs/10-site-map-sources.md    the map sources actually received (PDF + ArcGIS Online)
 docs/11-build-plan.md          the consolidated build plan (current)
-docs/maps/                     map assets: georeferenced imagery, boundary GeoJSON, PDFs
-tools/arcgis/fetch_arcgis.py   pulls imagery/features out of the PR25 ArcGIS web map
+sitemap/                       standalone, reusable site map package: imagery, transparent plot-plan
+                               layers, GMC prints, boundaries (all MGA50) + manifest + Leaflet viewer
+sitemap/tools/                 scripts that pull/render/refresh the package from the PR25 ArcGIS map
 docs/NOTES.md                  running notes, ideas, things deliberately excluded
 ```

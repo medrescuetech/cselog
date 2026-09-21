@@ -1,0 +1,19 @@
+{
+  "sources": [
+    "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_SiteC/FeatureServer/0",
+    "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_SiteF01/FeatureServer/0",
+    "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_SiteF02/FeatureServer/0"
+  ],
+  "aligned_to": "site-cf-2026-09-14_L17_0.25m.json",
+  "crs": "EPSG:28350",
+  "resolution_m": 0.2523268342028221,
+  "width_px": 4864,
+  "height_px": 7424,
+  "extent_mga50": {
+    "xmin": 475775.58663480077,
+    "ymax": 7719644.413721526,
+    "xmax": 477002.9043563633,
+    "ymin": 7717771.139304404
+  },
+  "polylines_drawn": 318380
+}

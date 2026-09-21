@@ -1,0 +1,237 @@
+{
+  "name": "Perdaman Urea Project (SCJV) site map",
+  "crs": "EPSG:28350",
+  "crs_name": "GDA94 / MGA zone 50 \u2014 units are metres (easting, northing)",
+  "extent": {
+    "xmin": 473127.1641830085,
+    "ymin": 7716479.225913286,
+    "xmax": 479586.73113860073,
+    "ymax": 7722163.644834207
+  },
+  "excluded": [
+    "Yara Pilbara plant east of Site C (masked out of prints; ~ easting > 476950)"
+  ],
+  "rasters": [
+    {
+      "id": "basemap-nearmap-2023-10_L15_1m",
+      "group": "imagery",
+      "title": "Whole site \u2014 Nearmap Oct 2023 (1 m/px)",
+      "file": "imagery/basemap-nearmap-2023-10_L15_1m.jpg",
+      "world_file": "imagery/basemap-nearmap-2023-10_L15_1m.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 1.0093073368112884,
+      "width_px": 6400,
+      "height_px": 5632,
+      "extent": {
+        "xmin": 473127.1641830085,
+        "ymax": 7722163.644834207,
+        "xmax": 479586.73113860073,
+        "ymin": 7716479.225913286
+      },
+      "transparent": false,
+      "default_visible": true,
+      "opacity": 1.0,
+      "source": "https://tiles-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/NEARMAP_BurrupTilesCombined_Raster/MapServer"
+    },
+    {
+      "id": "site-cf-2026-09-14_L17_0.25m",
+      "group": "imagery",
+      "title": "Site C & F \u2014 drone 14 Sep 2026 (0.25 m/px)",
+      "file": "imagery/site-cf-2026-09-14_L17_0.25m.jpg",
+      "world_file": "imagery/site-cf-2026-09-14_L17_0.25m.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.2523268342028221,
+      "width_px": 4864,
+      "height_px": 7424,
+      "extent": {
+        "xmin": 475775.58663480077,
+        "ymax": 7719644.413721526,
+        "xmax": 477002.9043563633,
+        "ymin": 7717771.139304404
+      },
+      "transparent": false,
+      "default_visible": true,
+      "opacity": 1.0,
+      "source": "https://tiles-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/2026SeptWk2SiteCF/MapServer"
+    },
+    {
+      "id": "site-cf-2026-09-14_L16_0.5m",
+      "group": "imagery",
+      "title": "Site C & F \u2014 drone 14 Sep 2026 (0.5 m/px, light)",
+      "file": "imagery/site-cf-2026-09-14_L16_0.5m.jpg",
+      "world_file": "imagery/site-cf-2026-09-14_L16_0.5m.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.5046536684056442,
+      "width_px": 2560,
+      "height_px": 3840,
+      "extent": {
+        "xmin": 475710.9909652453,
+        "ymax": 7719709.009391082,
+        "xmax": 477002.90435636375,
+        "ymin": 7717771.139304405
+      },
+      "transparent": false,
+      "default_visible": false,
+      "opacity": 1.0,
+      "source": "https://tiles-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/2026SeptWk2SiteCF/MapServer"
+    },
+    {
+      "id": "plotplan-overall-2025_L17_0.25m",
+      "group": "plan",
+      "title": "Plot plan \u2014 Overall (Saipem 2025)",
+      "file": "plan/plotplan-overall-2025_L17_0.25m.png",
+      "world_file": "plan/plotplan-overall-2025_L17_0.25m.pgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.2523268342028221,
+      "width_px": 4864,
+      "height_px": 7424,
+      "extent": {
+        "xmin": 475775.58663480077,
+        "ymax": 7719644.413721526,
+        "xmax": 477002.9043563633,
+        "ymin": 7717771.139304404
+      },
+      "transparent": true,
+      "default_visible": true,
+      "opacity": 1.0,
+      "source": [
+        "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_Overall/FeatureServer/0"
+      ]
+    },
+    {
+      "id": "plotplan-sitecf-detail-2025_L17_0.25m",
+      "group": "plan",
+      "title": "Plot plan \u2014 Site C / F detail (Saipem 2025)",
+      "file": "plan/plotplan-sitecf-detail-2025_L17_0.25m.png",
+      "world_file": "plan/plotplan-sitecf-detail-2025_L17_0.25m.pgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.2523268342028221,
+      "width_px": 4864,
+      "height_px": 7424,
+      "extent": {
+        "xmin": 475775.58663480077,
+        "ymax": 7719644.413721526,
+        "xmax": 477002.9043563633,
+        "ymin": 7717771.139304404
+      },
+      "transparent": true,
+      "default_visible": false,
+      "opacity": 1.0,
+      "source": [
+        "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_SiteC/FeatureServer/0",
+        "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_SiteF01/FeatureServer/0",
+        "https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_SiteF02/FeatureServer/0"
+      ]
+    },
+    {
+      "id": "print-site-c-2026-09-21_plotplan-on-imagery",
+      "group": "prints",
+      "title": "GMC print \u2014 Site C, plot plan on imagery (21 Sep 2026)",
+      "file": "prints/print-site-c-2026-09-21_plotplan-on-imagery.jpg",
+      "world_file": "prints/print-site-c-2026-09-21_plotplan-on-imagery.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.3230033333333333,
+      "width_px": 4729,
+      "height_px": 2504,
+      "extent": {
+        "xmin": 475811.58663480077,
+        "ymax": 7719265.413721526,
+        "xmax": 477339.0693981341,
+        "ymin": 7718456.613374859
+      },
+      "transparent": false,
+      "default_visible": false,
+      "opacity": 1.0,
+      "source": "Site_C_Map_SCJV_2_9.26_300dpi.png"
+    },
+    {
+      "id": "print-site-f-2026-09-21_plotplan-on-imagery",
+      "group": "prints",
+      "title": "GMC print \u2014 Site F, plot plan on imagery (21 Sep 2026)",
+      "file": "prints/print-site-f-2026-09-21_plotplan-on-imagery.jpg",
+      "world_file": "prints/print-site-f-2026-09-21_plotplan-on-imagery.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.3230033333333333,
+      "width_px": 4729,
+      "height_px": 2504,
+      "extent": {
+        "xmin": 475736.58663480077,
+        "ymax": 7718672.413721526,
+        "xmax": 477264.0693981341,
+        "ymin": 7717863.613374859
+      },
+      "transparent": false,
+      "default_visible": false,
+      "opacity": 1.0,
+      "source": "Site_F_Map_SCJV_21.9.26_300dpi.png"
+    },
+    {
+      "id": "print-site-f-2026-09-21_plotplan-boundaries-on-imagery",
+      "group": "prints",
+      "title": "GMC print \u2014 Site F, plot plan + boundaries (21 Sep 2026)",
+      "file": "prints/print-site-f-2026-09-21_plotplan-boundaries-on-imagery.jpg",
+      "world_file": "prints/print-site-f-2026-09-21_plotplan-boundaries-on-imagery.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.3230033333333333,
+      "width_px": 4729,
+      "height_px": 2504,
+      "extent": {
+        "xmin": 475736.58663480077,
+        "ymax": 7718672.413721526,
+        "xmax": 477264.0693981341,
+        "ymin": 7717863.613374859
+      },
+      "transparent": false,
+      "default_visible": false,
+      "opacity": 1.0,
+      "source": "Site_F_Map_SCJV_2_9.26_300dpi.png"
+    },
+    {
+      "id": "print-site-c-2023-10-imagery_plotplan",
+      "group": "prints",
+      "title": "GMC print \u2014 Site C, plot plan on Oct 2023 imagery",
+      "file": "prints/print-site-c-2023-10-imagery_plotplan.jpg",
+      "world_file": "prints/print-site-c-2023-10-imagery_plotplan.jgw",
+      "crs": "EPSG:28350",
+      "resolution_m": 0.3230033333333333,
+      "width_px": 4729,
+      "height_px": 2504,
+      "extent": {
+        "xmin": 475881.58663480077,
+        "ymax": 7719448.413721526,
+        "xmax": 477409.0693981341,
+        "ymin": 7718639.613374859
+      },
+      "transparent": false,
+      "default_visible": false,
+      "opacity": 1.0,
+      "source": "MAP_SCJV_300dpi_21.9.26.png"
+    }
+  ],
+  "vectors": [
+    {
+      "file": "features/project-development-envelope.geojson",
+      "title": "Project development envelope",
+      "default_visible": true,
+      "crs": "EPSG:4326"
+    },
+    {
+      "file": "features/lease-boundaries.geojson",
+      "title": "Lease boundaries",
+      "default_visible": false,
+      "crs": "EPSG:4326"
+    },
+    {
+      "file": "features/project-boundaries-infrastructure.geojson",
+      "title": "Named infrastructure (142)",
+      "default_visible": true,
+      "crs": "EPSG:4326"
+    },
+    {
+      "file": "features/cadastre.geojson",
+      "title": "Cadastre (context)",
+      "default_visible": false,
+      "crs": "EPSG:4326"
+    }
+  ]
+}

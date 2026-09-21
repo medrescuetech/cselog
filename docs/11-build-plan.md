@@ -8,7 +8,7 @@ are known. Where this conflicts with an earlier doc, this one wins.
 | Item | Value |
 |---|---|
 | Site | Perdaman Urea Project (PR25), Burrup Peninsula WA. Work areas: Site F (process plant), Site C (construction/laydown), Port/MOF, Conveyor corridor, LA30/LA44. |
-| Map data | **Tier 3.** Weekly drone imagery + boundaries/named-infrastructure polygons, all MGA Zone 50 (EPSG:28350), pulled into `docs/maps/` by `tools/arcgis/fetch_arcgis.py`. Plus the SCJV site map drawing (PDF). |
+| Map data | **Tier 3.** Weekly drone imagery + boundaries/named-infrastructure polygons, all MGA Zone 50 (EPSG:28350), packaged in `sitemap/` (see its README) by the scripts in `sitemap/tools/`. Plus the SCJV site map drawing (PDF). |
 | App scope | Control-room log with a live map. Pins over a fixed site image. **No zoom-out beyond the site, no GPS navigation, no wayfinding.** |
 | Hosting | cPanel shared hosting, deployed from GitHub. |
 | Stack | PHP 8.2 / Laravel 11 / MySQL / Blade + Alpine + Tailwind / Leaflet. |
@@ -41,10 +41,10 @@ and no projection edge cases, while still being real-world referenced.
 
 | Layer | Source | Format in repo | How served |
 |---|---|---|---|
-| Imagery — Site C&F (current) | `2026SeptWk2SiteCF` etc., L17 = 0.25 m/px, 4864×7424 | `docs/maps/imagery/*.jpg` + `.jgw` | Tiled once at upload (`vips dzsave` → `public/maps/<version>/tiles`), because a 10 MB / 36 Mpx JPEG is too heavy as a single overlay on a tablet. |
+| Imagery — Site C&F (current) | `2026SeptWk2SiteCF` etc., L17 = 0.25 m/px, 4864×7424 | `sitemap/imagery/*.jpg` + `.jgw` | Tiled once at upload (`vips dzsave` → `public/maps/<version>/tiles`), because a 10 MB / 36 Mpx JPEG is too heavy as a single overlay on a tablet. |
 | Imagery — whole site (context) | Nearmap basemap, L15 = 1 m/px, 6400×5632 | same | Same. Used for Port/Conveyor/LA44 and as the "where am I" backdrop. |
-| Drawn site plan | SCJV drawing PDF **or, preferably, an ArcGIS print with imagery off** (plot plan + labels only) | PDF → PNG at 200 dpi (`pdftoppm`) | Same tiling. Georeferenced **once** via 3–4 control points against the imagery (admin screen, RMS readout) — *unless* GMC exports it from ArcGIS, in which case the export extent is the georeference and no fitting is needed. |
-| Boundaries / areas | `docs/maps/features/*.geojson` | GeoJSON (EPSG:4326) → reprojected to MGA50 at import | `L.polygon` from the `/api/areas` endpoint; toggleable. |
+| Drawn site plan | Saipem plot plans rendered from the `PR25_CON_*` FeatureServers | `sitemap/plan/*.png` — transparent PNG, pixel-aligned to the L17 imagery (`render_plotplan.py`) | Same tiling. **No georeferencing step**: same grid as the imagery. GMC's ArcGIS prints (imagery burned in) are also in `sitemap/prints/`, auto-registered by `georef_print.py`, as optional "everything on" views. |
+| Boundaries / areas | `sitemap/features/*.geojson` | GeoJSON (EPSG:28350, already MGA50) | `L.polygon` from the `/api/areas` endpoint; toggleable. |
 | Landmarks | `project-boundaries-infrastructure.geojson` centroids (142 named structures) | import → `landmarks` table | `L.marker` with label; toggleable. |
 | Live pins | `entries` where `closed_at is null` | — | Polled every 15 s from `/api/open`. |
 
@@ -136,13 +136,12 @@ Effort is in Devin sessions. Each phase ends deployed to the cPanel staging subd
 ## Still needed from GMC
 
 1. cPanel details: SSH yes/no, PHP version, MySQL, cron, staging subdomain (Q17–20 in `07`).
-2. Preferred drawn layer: ArcGIS print with imagery off (best) or the SCJV PDF as-is.
-3. Confirm login is per person, and who the first admin is.
-4. Alert thresholds (default 2 h amber / 4 h red) and who receives overdue emails.
-5. Product name (CSEM stays unless told otherwise).
+2. Confirm login is per person, and who the first admin is.
+3. Alert thresholds (default 2 h amber / 4 h red) and who receives overdue emails.
+4. Product name (CSEM stays unless told otherwise).
 
 ## Immediate next steps
 
 1. Phase 0 on a `feature/phase-0-skeleton` branch → PR → deploy to staging.
 2. In parallel, rasterise the SCJV PDF and prototype the two-layer map statically
-   (`docs/maps` + Leaflet, no backend) to validate the MGA50-on-CRS.Simple approach early.
+   (`sitemap/viewer.html` — done, see `sitemap/README.md`) to validate the MGA50-on-CRS.Simple approach early.

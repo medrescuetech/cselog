@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SCJV site map — standalone viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  html, body, #map { height: 100%; margin: 0; background: #1b1b1b; }
+  .leaflet-control-layers label { white-space: nowrap; }
+  #coords { position: absolute; left: 8px; bottom: 8px; z-index: 1000; font: 12px/1.4 monospace;
+            background: rgba(255,255,255,.9); padding: 4px 8px; border-radius: 4px; }
+  #opacity { position: absolute; right: 8px; bottom: 8px; z-index: 1000; font: 12px sans-serif;
+             background: rgba(255,255,255,.9); padding: 6px 8px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="coords">E — N —</div>
+<div id="opacity"><label>plan opacity <input type="range" min="0" max="1" step="0.05" value="1"></label></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// One flat coordinate system: Leaflet CRS.Simple where x = MGA50 easting (m), y = northing (m).
+// Leaflet's Simple CRS has y increasing downwards, so northing is negated: latlng = [-N, E].
+const toLL = (e, n) => L.latLng(-n, e);
+const fromLL = ll => ({ e: ll.lng, n: -ll.lat });
+
+fetch('manifest.json').then(r => r.json()).then(async m => {
+  const ext = m.extent;
+  const map = L.map('map', { crs: L.CRS.Simple, minZoom: -6, maxZoom: 4, zoomSnap: 0.25,
+                             maxBounds: L.latLngBounds(toLL(ext.xmin - 500, ext.ymin - 500), toLL(ext.xmax + 500, ext.ymax + 500)) });
+  const groups = { imagery: {}, plan: {}, prints: {}, vectors: {} };
+  const planLayers = [];
+
+  for (const r of m.rasters) {
+    const b = L.latLngBounds(toLL(r.extent.xmin, r.extent.ymin), toLL(r.extent.xmax, r.extent.ymax));
+    const ov = L.imageOverlay(r.file, b, { opacity: r.opacity, zIndex: r.group === 'imagery' ? 10 : r.group === 'prints' ? 20 : 30 });
+    if (r.default_visible) ov.addTo(map);
+    if (r.group === 'plan') planLayers.push(ov);
+    groups[r.group][r.title] = ov;
+  }
+
+  const colours = { 'Project development envelope': '#ffd400', 'Lease boundaries': '#00b0ff', 'Named infrastructure (142)': '#ff5f1f', 'Cadastre (context)': '#aaaaaa' };
+  for (const v of m.vectors) {
+    const gj = await fetch(v.file).then(r => r.json());
+    const layer = L.geoJSON(gj, {
+      coordsToLatLng: c => toLL(c[0], c[1]),
+      style: { color: colours[v.title] || '#fff', weight: 1.5, fill: false },
+      onEachFeature: (f, l) => { const p = f.properties || {}; const name = p.RefName || p.Name || p.NAME || p.Tenement || ''; if (name) l.bindTooltip(String(name), { sticky: true }); }
+    });
+    if (v.default_visible) layer.addTo(map);
+    groups.vectors[v.title] = layer;
+  }
+
+  // Demo pins: click to drop, stored in metres so they survive any layer swap.
+  const pins = L.layerGroup().addTo(map);
+  map.on('click', e => {
+    const { e: E, n: N } = fromLL(e.latlng);
+    L.marker(e.latlng).bindPopup(`E ${E.toFixed(1)}  N ${N.toFixed(1)}`).addTo(pins).openPopup();
+  });
+  map.on('mousemove', e => { const { e: E, n: N } = fromLL(e.latlng); document.getElementById('coords').textContent = `E ${E.toFixed(1)}  N ${N.toFixed(1)}  (MGA50)`; });
+
+  L.control.layers(null, { ...groups.imagery, ...groups.plan, ...groups.prints, ...groups.vectors, 'Pins': pins }, { collapsed: false }).addTo(map);
+  document.querySelector('#opacity input').addEventListener('input', ev => planLayers.forEach(l => l.setOpacity(+ev.target.value)));
+
+  // start on Site C & F
+  const cf = m.rasters.find(r => r.id.startsWith('site-cf') && r.default_visible) || m.rasters[0];
+  map.fitBounds(L.latLngBounds(toLL(cf.extent.xmin, cf.extent.ymin), toLL(cf.extent.xmax, cf.extent.ymax)));
+});
+</script>
+</body>
+</html>

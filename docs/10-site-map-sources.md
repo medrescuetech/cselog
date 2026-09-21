@@ -6,7 +6,7 @@ two real map sources now exist.
 
 ## 1. SCJV site map PDF
 
-`docs/maps/scjv-site-map-2026-08-21_0000-GB-A-60002-3.pdf` (drawing no. 0000-GB-A-60002 rev 3,
+`sitemap/scjv-site-map-2026-08-21_0000-GB-A-60002-3.pdf` (drawing no. 0000-GB-A-60002 rev 3,
 dated 21 Aug 2026, ~30 MB).
 
 - This is the **Tier 1 / Tier 2** asset from doc 09: rasterise once
@@ -38,7 +38,7 @@ Contents (~330 layers, all on the same ArcGIS org, projected MGA Zone 50, EPSG:2
 Verified anonymously readable (no login): web map JSON, feature service `/query`, and tile
 fetches. Imagery is updated **weekly** (Site C & F and LA44 drone captures; latest 14 Sep 2026).
 
-**Cloned into the repo** with `tools/arcgis/fetch_arcgis.py` — see `docs/maps/README.md`:
+**Cloned into the repo** with `sitemap/tools/fetch_arcgis.py` — see `sitemap/README.md`:
 georeferenced JPEG + world file of the whole-site basemap (1 m/px) and the latest Site C/F
 capture (0.25 m/px), plus GeoJSON of the lease/project boundaries and the 142 named
 infrastructure polygons. Everything else can be consumed live via `esri-leaflet`.

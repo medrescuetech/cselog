@@ -58,3 +58,14 @@ Cheap to change now, annoying later — worth five minutes of thought before Pha
 3. Confirm the stack (or push back on it) and the phase order.
 4. Then Phase 0: Laravel skeleton + cPanel deploy pipeline proven end-to-end with a hello-world
    page, before any feature work.
+
+## 2026-09-21 — drawn layer solved without GMC exports
+
+- GMC cannot export the plot plan with imagery off (Print widget burns the basemap in). Not needed:
+  `sitemap/tools/render_plotplan.py` renders the Saipem plot-plan FeatureServers straight to a
+  transparent PNG on the imagery's pixel grid, in the service's own colours. ~540k polylines, 1.5 MB.
+- GMC's four A3 300 dpi prints are kept anyway (`sitemap/prints/`), auto-registered by
+  cross-correlating their linework with the rendered plan (scale 1:3,815 → 0.323 m/px). Yara
+  (east of Site C) masked out per GMC; title/legend strips cropped.
+- Map assets moved out of `docs/maps` into a standalone `sitemap/` package (manifest + Leaflet
+  viewer) so the map can be lifted into other projects unchanged.

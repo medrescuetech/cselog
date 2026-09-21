@@ -113,13 +113,13 @@ def cmd_features(args):
     feats = []
     offset = 0
     while True:
-        page = get_json(f"{url}/query", where="1=1", outFields="*", outSR=4326,
+        page = get_json(f"{url}/query", where="1=1", outFields="*", outSR=args.sr,
                         f="geojson", resultOffset=offset, resultRecordCount=max_rec)
         feats.extend(page.get("features", []))
         if not page.get("properties", {}).get("exceededTransferLimit") and len(page.get("features", [])) < max_rec:
             break
         offset += max_rec
-    fc = {"type": "FeatureCollection", "name": meta.get("name"),
+    fc = {"type": "FeatureCollection", "name": meta.get("name"), "crs_epsg": args.sr,
           "source": url, "geometryType": meta.get("geometryType"), "features": feats}
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w") as f:
@@ -136,6 +136,7 @@ def main():
     s.add_argument("--bbox", help="xmin,ymin,xmax,ymax in EPSG:28350 (default: service full extent)")
     s.add_argument("--quality", type=int, default=85); s.set_defaults(fn=cmd_imagery)
     s = sub.add_parser("features"); s.add_argument("layer"); s.add_argument("--out", required=True)
+    s.add_argument("--sr", type=int, default=28350, help="output EPSG (default 28350 = MGA50, same as the rasters)")
     s.set_defaults(fn=cmd_features)
     a = p.parse_args(); a.fn(a)
 
