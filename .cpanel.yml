@@ -1,0 +1,18 @@
+---
+# cPanel "Git Version Control" deployment. Requires: SSH/Composer on the host, PHP 8.3
+# (ea-php83), and ~/csem-app/.env created by hand (see docs/08-deployment-cpanel.md).
+# Replace USER, then set the docroot of the (sub)domain to /home/USER/csem-app/public.
+deployment:
+  tasks:
+    - export APP=/home/USER/csem-app
+    - export SRC=/home/USER/repositories/cselog
+    - export PHP=/usr/local/bin/ea-php83
+    - mkdir -p $APP
+    - /bin/rsync -a --delete --exclude='.git' --exclude='storage' --exclude='.env' --exclude='database/database.sqlite' --exclude='vendor' $SRC/ $APP/
+    - cd $APP && $PHP /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+    - cd $APP && ln -sfn ../sitemap public/sitemap
+    - cd $APP && $PHP artisan migrate --force
+    - cd $APP && $PHP artisan db:seed --force
+    - cd $APP && $PHP artisan sitemap:import
+    - cd $APP && $PHP artisan optimize
+    - cd $APP && chmod -R ug+rwX storage bootstrap/cache

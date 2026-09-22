@@ -3,8 +3,28 @@
 A web-based log and live map for tracking open work locations on a site (primarily confined
 space entries) that are called in by radio.
 
-**Status:** specification / design. No application code yet — this repo currently holds the
-solution document and supporting notes.
+**Status:** Phase 0–2 working locally — Laravel app (login/roles, quick log, open board,
+close-out, history + CSV, live map with MGA50 pins and pin-drop location creation) on top of
+the reusable `sitemap/` package. Not yet deployed.
+
+## Run it locally
+
+```bash
+composer install
+cp .env.example .env && php artisan key:generate      # SQLite by default
+php artisan migrate --seed                            # work types + admin user
+php artisan sitemap:import                            # areas/landmarks from sitemap/features
+php artisan serve                                     # http://localhost:8000
+```
+
+Default admin is `admin@example.com` / `changeme` — override with `CSEM_ADMIN_EMAIL` /
+`CSEM_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
+`scripts/smoke.sh` exercises every route against a running dev server.
+
+Stack as built: PHP 8.3 / Laravel 13, Blade + Alpine + Tailwind (CDN for now), Leaflet
+`CRS.Simple` in MGA Zone 50 metres. The cPanel host must therefore offer `ea-php83`; if it
+only has 8.2 we downgrade to Laravel 11 (small change — nothing framework-specific is used).
+
 
 ---
 

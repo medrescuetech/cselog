@@ -10,6 +10,7 @@
 /public/hot
 /public/storage
 /public/maps
+!/public/sitemap
 /storage/*.key
 /storage/framework/cache/*
 /storage/framework/sessions/*
@@ -31,3 +32,10 @@ Thumbs.db
 .vscode/
 *.swp
 __pycache__/
+
+# Laravel extras
+.phpunit.result.cache
+/.phpunit.cache
+/auth.json
+/database/*.sqlite
+/storage/pail

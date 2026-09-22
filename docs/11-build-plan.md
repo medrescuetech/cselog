@@ -72,6 +72,13 @@ extent — that gives a drawn layer that is pixel-aligned with the imagery for f
 
 Effort is in Devin sessions. Each phase ends deployed to the cPanel staging subdomain.
 
+> **As built (Sep 2026):** Phases 0–2 landed together in one pass. Deviations from the plan
+> below: Laravel 13 / PHP 8.3 (Laravel 10/11 scaffolds are blocked by Composer security
+> advisories at current versions — confirm `ea-php83` on the cPanel host, else downgrade to 11);
+> hand-rolled session login instead of Breeze; Tailwind/Alpine/Leaflet from CDN instead of
+> npm/Vite (no Node build step to deploy); PHPUnit instead of Pest. Not yet deployed — Phase 0's
+> deploy exit criterion is still open pending host details (question 17).
+
 ### Phase 0 — Skeleton and pipeline (~0.5 session)
 - Laravel 11 + Breeze (session auth), Tailwind, Alpine, Leaflet via npm, Pest tests.
 - `.cpanel.yml` deploy (per `08-deployment-cpanel.md`); GitHub Action builds `vendor/` and

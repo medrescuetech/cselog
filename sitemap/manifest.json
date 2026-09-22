@@ -213,25 +213,25 @@
       "file": "features/project-development-envelope.geojson",
       "title": "Project development envelope",
       "default_visible": true,
-      "crs": "EPSG:4326"
+      "crs": "EPSG:28350"
     },
     {
       "file": "features/lease-boundaries.geojson",
       "title": "Lease boundaries",
       "default_visible": false,
-      "crs": "EPSG:4326"
+      "crs": "EPSG:28350"
     },
     {
       "file": "features/project-boundaries-infrastructure.geojson",
       "title": "Named infrastructure (142)",
       "default_visible": true,
-      "crs": "EPSG:4326"
+      "crs": "EPSG:28350"
     },
     {
       "file": "features/cadastre.geojson",
       "title": "Cadastre (context)",
       "default_visible": false,
-      "crs": "EPSG:4326"
+      "crs": "EPSG:28350"
     }
   ]
 }

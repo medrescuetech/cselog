@@ -32,6 +32,11 @@ VECTORS = [
 ]
 
 
+def vector_epsg(rel):
+    with open(os.path.join(ROOT, rel)) as fh:
+        return json.load(fh).get("crs_epsg", 4326)
+
+
 def main():
     layers = []
     for pattern, group, title, visible, opacity in LAYER_RULES:
@@ -63,7 +68,10 @@ def main():
         "extent": {"xmin": min(xs), "ymin": min(ys), "xmax": max(xs), "ymax": max(ys)},
         "excluded": ["Yara Pilbara plant east of Site C (masked out of prints; ~ easting > 476950)"],
         "rasters": layers,
-        "vectors": [{"file": f, "title": t, "default_visible": v, "crs": "EPSG:4326"} for f, t, v in VECTORS],
+        "vectors": [
+            {"file": f, "title": t, "default_visible": v, "crs": f"EPSG:{vector_epsg(f)}"}
+            for f, t, v in VECTORS
+        ],
     }
     with open(os.path.join(ROOT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
