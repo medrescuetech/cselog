@@ -32,3 +32,12 @@ Route::middleware(['auth', 'role:logger'])->group(function () {
     Route::post('/api/locations', [LocationController::class, 'store'])->name('api.locations.store');
     Route::get('/api/locations/nearby', [LocationController::class, 'nearby'])->name('api.locations.nearby');
 });
+
+Route::middleware(['auth', 'role:supervisor'])->group(function () {
+    Route::get('/admin/locations', [\App\Http\Controllers\AdminLocationController::class, 'index'])->name('admin.locations.index');
+    Route::post('/admin/locations/{location}/verify', [\App\Http\Controllers\AdminLocationController::class, 'verify'])->name('admin.locations.verify');
+    Route::post('/admin/locations/{location}/archive', [\App\Http\Controllers\AdminLocationController::class, 'archive'])->name('admin.locations.archive');
+    Route::post('/admin/locations/{location}/merge', [\App\Http\Controllers\AdminLocationController::class, 'merge'])->name('admin.locations.merge');
+    Route::get('/admin/locations/export', [\App\Http\Controllers\AdminLocationController::class, 'export'])->name('admin.locations.export');
+    Route::post('/admin/locations/import', [\App\Http\Controllers\AdminLocationController::class, 'import'])->name('admin.locations.import');
+});
