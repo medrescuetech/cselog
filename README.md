@@ -221,7 +221,7 @@ for the full list. The ones that matter most:
 
 1. How many sites, and roughly how many open entries at once / per day?
 2. What map data actually exists — image only, PDF, shapefile/DWG, GeoTIFF, an ArcGIS/QGIS export?
-   **Answered:** SCJV site map PDF + public ArcGIS Online web map (Nearmap tiles, plot plans,
+   **Answered:** site map PDF + public ArcGIS Online web map (Nearmap tiles, plot plans,
    lease boundaries) — see `docs/10-site-map-sources.md`. `docs/09` is now the fallback plan.
 3. Who logs the call: one controller at a desk, or multiple people on phones in the field?
 4. Does this need to feed or replace an existing permit-to-work system?

@@ -94,6 +94,39 @@ class EntryFlowTest extends TestCase
             ->assertCreated()->assertJsonPath('verified', false)->assertJsonPath('area_id', $this->area->id);
     }
 
+    public function test_working_at_heights_job_logging_and_filtering(): void
+    {
+        $heightsType = WorkType::create(['name' => 'Working at Heights', 'colour' => '#5bc0de', 'sort_order' => 2]);
+
+        $this->actingAs($this->logger)
+            ->post('/log', [
+                'work_type_id' => $heightsType->id,
+                'location_label' => 'Scaffold Platform 4B',
+                'easting' => 476550,
+                'northing' => 7718550,
+                'notes' => 'Harness and lanyard inspected',
+                'permit_no' => 'WAH-102',
+            ])
+            ->assertRedirect('/board');
+
+        $entry = Entry::where('permit_no', 'WAH-102')->firstOrFail();
+        $this->assertSame($heightsType->id, $entry->work_type_id);
+        $this->assertSame('Working at Heights', $entry->workType->name);
+
+        $this->actingAs($this->viewer)
+            ->get('/history?work_type_id=' . $heightsType->id)
+            ->assertOk()
+            ->assertSee('Scaffold Platform 4B')
+            ->assertSee('WAH-102')
+            ->assertSee('Working at Heights');
+
+        $this->actingAs($this->viewer)
+            ->get('/board')
+            ->assertOk()
+            ->assertSee('Scaffold Platform 4B')
+            ->assertSee('Working at Heights');
+    }
+
     public function test_history_filters_and_csv(): void
     {
         $this->actingAs($this->logger)->post('/log', ['work_type_id' => $this->type->id, 'location_label' => 'A', 'easting' => 476500, 'northing' => 7718500, 'permit_no' => 'GDP-9']);
