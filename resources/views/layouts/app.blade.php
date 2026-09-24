@@ -13,17 +13,26 @@
 <body class="h-full bg-slate-900 text-slate-100 flex flex-col">
 <nav class="bg-slate-950 border-b border-slate-800">
   <div class="max-w-7xl mx-auto px-3 h-14 flex items-center gap-2 text-sm">
-    <a href="{{ route('board') }}" class="font-bold text-lg tracking-tight mr-2">{{ config('app.name') }}</a>
-    @php $nav = [['board','Open board'],['map','Map'],['history','History']]; @endphp
-    @foreach ($nav as [$r,$label])
-      <a href="{{ route($r) }}" class="px-3 py-2 rounded {{ request()->routeIs($r) ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">{{ $label }}</a>
-    @endforeach
+    <a href="{{ route(auth()->user()?->role === 'map_only' ? 'map' : 'board') }}" class="font-bold text-lg tracking-tight mr-2">{{ config('app.name') }}</a>
+    @if (auth()->user()?->atLeast('viewer'))
+      <a href="{{ route('board') }}" class="px-3 py-2 rounded {{ request()->routeIs('board') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Open board</a>
+    @endif
+    <a href="{{ route('map') }}" class="px-3 py-2 rounded {{ request()->routeIs('map') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Map</a>
+    @if (auth()->user()?->atLeast('viewer'))
+      <a href="{{ route('history') }}" class="px-3 py-2 rounded {{ request()->routeIs('history') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">History</a>
+    @endif
+    @if (auth()->user()?->atLeast('supervisor'))
+      <a href="{{ route('admin.locations.index') }}" class="px-3 py-2 rounded {{ request()->routeIs('admin.locations.*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Locations</a>
+    @endif
+    @if (auth()->user()?->atLeast('admin'))
+      <a href="{{ route('admin.settings.index') }}" class="px-3 py-2 rounded {{ request()->routeIs('admin.settings.*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Settings</a>
+    @endif
     <div class="flex-1"></div>
     @if (auth()->user()?->atLeast('logger'))
       <a href="{{ route('entries.create') }}" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 font-semibold">+ Log entry</a>
     @endif
     <form method="post" action="{{ route('logout') }}" class="ml-2">@csrf
-      <button class="text-slate-400 hover:text-white px-2 py-2" title="{{ auth()->user()?->email }}">{{ auth()->user()?->name }} ⎋</button>
+      <button class="text-slate-400 hover:text-white px-2 py-2" title="{{ auth()->user()?->email }} ({{ auth()->user()?->role }})">{{ auth()->user()?->name }} ⎋</button>
     </form>
   </div>
 </nav>

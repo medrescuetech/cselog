@@ -27,7 +27,27 @@ class DatabaseSeeder extends Seeder
 
         User::updateOrCreate(
             ['email' => env('HRWT_ADMIN_EMAIL', env('CSEM_ADMIN_EMAIL', 'admin@example.com'))],
-            ['name' => 'Admin', 'password' => env('HRWT_ADMIN_PASSWORD', env('CSEM_ADMIN_PASSWORD', 'changeme')), 'role' => 'admin'],
+            ['name' => 'Admin User', 'password' => env('HRWT_ADMIN_PASSWORD', env('CSEM_ADMIN_PASSWORD', 'changeme')), 'role' => 'admin'],
+        );
+
+        User::updateOrCreate(
+            ['email' => 'supervisor@example.com'],
+            ['name' => 'Supervisor User', 'password' => 'changeme', 'role' => 'supervisor'],
+        );
+
+        User::updateOrCreate(
+            ['email' => 'logger@example.com'],
+            ['name' => 'Normal Logger User', 'password' => 'changeme', 'role' => 'logger'],
+        );
+
+        User::updateOrCreate(
+            ['email' => 'viewer@example.com'],
+            ['name' => 'Read Only Viewer', 'password' => 'changeme', 'role' => 'viewer'],
+        );
+
+        User::updateOrCreate(
+            ['email' => 'maponly@example.com'],
+            ['name' => 'Map Only User', 'password' => 'changeme', 'role' => 'map_only'],
         );
     }
 }
