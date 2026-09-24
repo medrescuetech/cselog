@@ -145,7 +145,7 @@ Effort is in Devin sessions. Each phase ends deployed to the cPanel staging subd
 1. cPanel details: SSH yes/no, PHP version, MySQL, cron, staging subdomain (Q17–20 in `07`).
 2. Confirm login is per person, and who the first admin is.
 3. Alert thresholds (default 2 h amber / 4 h red) and who receives overdue emails.
-4. Product name (CSEM stays unless told otherwise).
+4. Product name: HRWT — High Risk Work Tracker.
 
 ## Immediate next steps
 

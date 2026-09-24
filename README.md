@@ -1,4 +1,4 @@
-# CSEM — Confined Space Entry Monitor
+# HRWT — High Risk Work Tracker
 
 A web-based log and live map for tracking open work locations on a site (primarily confined
 space entries) that are called in by radio.
@@ -17,8 +17,8 @@ php artisan sitemap:import                            # areas/landmarks from sit
 php artisan serve                                     # http://localhost:8000
 ```
 
-Default admin is `admin@example.com` / `changeme` — override with `CSEM_ADMIN_EMAIL` /
-`CSEM_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
+Default admin is `admin@example.com` / `changeme` — override with `HRWT_ADMIN_EMAIL` /
+`HRWT_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
 `scripts/smoke.sh` exercises every route against a running dev server.
 
 Stack as built: PHP 8.3 / Laravel 13, Blade + Alpine + Tailwind (CDN for now), Leaflet

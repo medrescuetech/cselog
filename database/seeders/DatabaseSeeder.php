@@ -26,8 +26,8 @@ class DatabaseSeeder extends Seeder
         }
 
         User::updateOrCreate(
-            ['email' => env('CSEM_ADMIN_EMAIL', 'admin@example.com')],
-            ['name' => 'Admin', 'password' => env('CSEM_ADMIN_PASSWORD', 'changeme'), 'role' => 'admin'],
+            ['email' => env('HRWT_ADMIN_EMAIL', env('CSEM_ADMIN_EMAIL', 'admin@example.com'))],
+            ['name' => 'Admin', 'password' => env('HRWT_ADMIN_PASSWORD', env('CSEM_ADMIN_PASSWORD', 'changeme')), 'role' => 'admin'],
         );
     }
 }

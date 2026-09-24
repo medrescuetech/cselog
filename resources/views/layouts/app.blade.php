@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', 'CSEM') · {{ config('app.name') }}</title>
+<title>@yield('title', 'HRWT') · {{ config('app.name') }}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 @stack('head')
-<style>[x-cloak]{display:none!important} .csem-nodata-black{mix-blend-mode:lighten}</style>
+<style>[x-cloak]{display:none!important} .hrwt-nodata-black{mix-blend-mode:lighten}</style>
 </head>
 <body class="h-full bg-slate-900 text-slate-100 flex flex-col">
 <nav class="bg-slate-950 border-b border-slate-800">

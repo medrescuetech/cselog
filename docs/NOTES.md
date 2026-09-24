@@ -45,9 +45,8 @@ against those three.
 
 ## Naming
 
-Working title **CSEM** (Confined Space Entry Monitor). The system isn't confined-space-specific
-(the work type list is customisable), so something like *SiteLog* / *OpenWork* might age better.
-Cheap to change now, annoying later — worth five minutes of thought before Phase 0.
+Named **HRWT** (High Risk Work Tracker). The system isn't confined-space-specific
+(the work type list is customisable and covers Working at Heights, Hot Work, etc.).
 
 ## Next actions
 
