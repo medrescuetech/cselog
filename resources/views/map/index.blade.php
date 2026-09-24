@@ -61,7 +61,7 @@
     document.getElementById('count').textContent = `${j.entries.length} open`;
   }
   await refresh();
-  setInterval(refresh, {{ config('csem.poll_seconds') }} * 1000);
+  setInterval(refresh, {{ config('hrwt.poll_seconds', 15) }} * 1000);
   const focus = new URLSearchParams(location.search);
   if (focus.get('e')) cm.focus(+focus.get('e'), +focus.get('n'), 2);
 })();
