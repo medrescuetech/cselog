@@ -10,27 +10,75 @@
     <a href="{{ route('map') }}" class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-sm">Map</a>
   </div>
 
-  <div x-show="!entries.length" class="text-slate-400 py-10 text-center text-lg">Nothing open.</div>
+  <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/40">
+    <table class="w-full min-w-[1120px] border-collapse text-sm">
+      <thead class="bg-slate-950 text-slate-300 text-xs uppercase tracking-wide">
+        <tr>
+          <th scope="col" class="px-3 py-3 text-left w-24">Elapsed</th>
+          <th scope="col" class="px-3 py-3 text-left w-40">Type</th>
+          <th scope="col" class="px-3 py-3 text-left min-w-[14rem]">Location</th>
+          <th scope="col" class="px-3 py-3 text-left w-44">Area</th>
+          <th scope="col" class="px-3 py-3 text-left w-28">Permit</th>
+          <th scope="col" class="px-3 py-3 text-left min-w-[15rem]">Notes / Reported by</th>
+          <th scope="col" class="px-3 py-3 text-left w-24">Opened</th>
+          <th scope="col" class="px-3 py-3 text-left w-36">Opened by</th>
+          @if (auth()->user()->atLeast('logger'))
+            <th scope="col" class="px-3 py-3 text-right w-24">Action</th>
+          @endif
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-700/80">
+        <tr x-show="!entries.length">
+          <td colspan="{{ auth()->user()->atLeast('logger') ? 9 : 8 }}" class="px-3 py-10 text-center text-slate-400 text-lg">
+            Nothing open.
+          </td>
+        </tr>
 
-  <div class="grid gap-2">
-    <template x-for="e in entries" :key="e.id">
-      <div class="rounded-lg px-3 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 border"
-           :class="{ 'bg-red-900/50 border-red-700': e.band === 'red', 'bg-amber-900/40 border-amber-700': e.band === 'amber',
-                     'bg-slate-800 border-slate-700': e.band === 'none', 'ring-2 ring-emerald-400': e.id === highlight }">
-        <div class="font-mono text-2xl w-20" :class="e.band === 'red' ? 'animate-pulse' : ''" x-text="fmtElapsed((now - Date.parse(e.opened_at))/1000)"></div>
-        <span class="inline-block w-3 h-3 rounded-full" :style="`background:${e.colour}`"></span>
-        <div class="flex-1 min-w-[12rem]">
-          <div class="font-semibold text-lg" x-text="e.location"></div>
-          <div class="text-xs text-slate-300"><span x-text="e.type"></span> · <span x-text="e.area || '—'"></span>
-            <template x-if="e.permit_no"><span> · permit <span x-text="e.permit_no"></span></span></template></div>
-        </div>
-        <div class="text-sm text-slate-300 flex-1 min-w-[10rem]" x-text="[e.notes, e.reported_by].filter(Boolean).join(' — ')"></div>
-        <div class="text-xs text-slate-500" x-text="new Date(e.opened_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' · ' + (e.opened_by || '')"></div>
-        @if (auth()->user()->atLeast('logger'))
-        <button @click="closing = e" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-emerald-600 font-semibold">Close</button>
-        @endif
-      </div>
-    </template>
+        <template x-for="e in entries" :key="e.id">
+          <tr
+            :class="{
+              'bg-red-900/45': e.band === 'red',
+              'bg-amber-900/35': e.band === 'amber',
+              'bg-slate-800/50': e.band === 'none',
+              'ring-2 ring-inset ring-emerald-400': e.id === highlight
+            }">
+            <td class="px-3 py-3 align-top">
+              <div class="font-mono text-xl whitespace-nowrap"
+                   :class="e.band === 'red' ? 'animate-pulse text-red-100' : ''"
+                   x-text="fmtElapsed((now - Date.parse(e.opened_at))/1000)"></div>
+            </td>
+            <td class="px-3 py-3 align-top">
+              <div class="flex items-center gap-2">
+                <span class="inline-block w-3 h-3 rounded-full shrink-0" :style="`background:${e.colour}`"></span>
+                <span class="font-medium" x-text="e.type"></span>
+              </div>
+            </td>
+            <td class="px-3 py-3 align-top">
+              <div class="font-semibold text-base" x-text="e.location"></div>
+            </td>
+            <td class="px-3 py-3 align-top text-slate-300" x-text="e.area || '—'"></td>
+            <td class="px-3 py-3 align-top font-mono text-slate-300" x-text="e.permit_no || '—'"></td>
+            <td class="px-3 py-3 align-top text-slate-300">
+              <div x-text="e.notes || '—'"></div>
+              <template x-if="e.reported_by">
+                <div class="mt-1 text-xs text-slate-500">Reported by <span x-text="e.reported_by"></span></div>
+              </template>
+            </td>
+            <td class="px-3 py-3 align-top text-slate-300 whitespace-nowrap"
+                x-text="new Date(e.opened_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})"></td>
+            <td class="px-3 py-3 align-top text-slate-300" x-text="e.opened_by || '—'"></td>
+            @if (auth()->user()->atLeast('logger'))
+              <td class="px-3 py-3 align-top text-right">
+                <button @click="closing = e"
+                        class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-emerald-600 font-semibold">
+                  Close
+                </button>
+              </td>
+            @endif
+          </tr>
+        </template>
+      </tbody>
+    </table>
   </div>
 
   <div x-show="closing" x-cloak class="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" @click.self="closing = null">
@@ -60,7 +108,16 @@ function board() {
       setTimeout(() => this.highlight = 0, 6000);
     },
     async refresh() {
-      try { const j = await fetch('/api/open', { headers: { Accept: 'application/json' } }).then(r => r.json()); this.entries = j.entries; this.last = Date.now(); } catch (e) {}
+      try {
+        const response = await fetch('/api/open', { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error(`Open board refresh failed (HTTP ${response.status})`);
+        const j = await response.json();
+        this.entries = j.entries;
+        this.last = Date.now();
+      } catch (error) {
+        console.error('CSEM board refresh failed', error);
+        window.csemReportError?.('board-refresh', error.message || 'Open board refresh failed', { stack: error.stack || null });
+      }
     },
   };
 }
