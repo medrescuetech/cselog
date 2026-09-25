@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Log entry')
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+<script src="/vendor/leaflet/leaflet.js"></script>
 <script src="/js/csem-map.js"></script>
 @endpush
 
