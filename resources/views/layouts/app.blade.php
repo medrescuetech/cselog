@@ -52,6 +52,7 @@ html[data-theme="light"] .leaflet-popup-tip{background:#fff!important;color:#0f1
         ['board', 'Open board'],
         ['map', 'Map'],
         ['entries.create', 'Log work'],
+        ['pending', 'Pending'],
         ['logbook', 'Logbook'],
         ['reports.index', 'Reports'],
       ];
