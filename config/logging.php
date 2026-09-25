@@ -52,10 +52,10 @@ return [
             'replace_placeholders' => true,
         ],
 
-        'csem_errors' => [
+        'hwrt_errors' => [
             'driver' => 'single',
-            'path' => storage_path('logs/csem-errors.log'),
-            'level' => env('CSEM_ERROR_LOG_LEVEL', 'warning'),
+            'path' => storage_path('logs/hwrt-errors.log'),
+            'level' => env('HWRT_ERROR_LOG_LEVEL', env('CSEM_ERROR_LOG_LEVEL', 'warning')),
             'replace_placeholders' => true,
             'permission' => 0660,
         ],
