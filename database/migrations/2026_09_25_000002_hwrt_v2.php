@@ -56,11 +56,6 @@ return new class extends Migration
             $table->foreignId('scheduled_by')->nullable()->after('planned_start_at')->constrained('users')->nullOnDelete();
         });
 
-        Schema::table('entries', function (Blueprint $table) {
-            $table->dateTime('opened_at')->nullable()->change();
-            $table->foreignId('opened_by')->nullable()->change();
-        });
-
         Schema::table('locations', function (Blueprint $table) {
             $table->string('document_path', 500)->nullable();
             $table->string('document_name', 255)->nullable();
@@ -91,11 +86,6 @@ return new class extends Migration
             $table->dropConstrainedForeignId('scheduled_by');
             $table->dropUnique(['hrw_ref']);
             $table->dropColumn(['hrw_ref', 'other_description', 'planned_start_at']);
-        });
-
-        Schema::table('entries', function (Blueprint $table) {
-            $table->dateTime('opened_at')->nullable(false)->change();
-            $table->foreignId('opened_by')->nullable(false)->change();
         });
 
         Schema::table('work_types', function (Blueprint $table) {
