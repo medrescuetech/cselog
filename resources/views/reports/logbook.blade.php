@@ -23,6 +23,7 @@
       <thead class="bg-slate-950 text-slate-300 text-left text-xs uppercase tracking-wide">
         <tr>
           <th class="p-3">HRW ID</th>
+          <th class="p-3">Planned</th>
           <th class="p-3">Opened</th>
           <th class="p-3">Closed</th>
           <th class="p-3">Status</th>
@@ -37,7 +38,8 @@
       @forelse ($entries as $e)
         <tr class="{{ $e->status === 'open' ? 'bg-emerald-950/20' : 'hover:bg-slate-800/50' }}">
           <td class="p-3 font-mono font-semibold whitespace-nowrap">{{ $e->hrw_ref }}</td>
-          <td class="p-3 whitespace-nowrap">{{ $e->opened_at->format('d M Y H:i') }}</td>
+          <td class="p-3 whitespace-nowrap">{{ $e->planned_start_at?->format('d M Y H:i') ?? '—' }}</td>
+          <td class="p-3 whitespace-nowrap">{{ $e->status === 'pending' ? '—' : $e->opened_at->format('d M Y H:i') }}</td>
           <td class="p-3 whitespace-nowrap">{{ $e->closed_at?->format('d M Y H:i') ?? '—' }}</td>
           <td class="p-3"><span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $e->status === 'open' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-slate-700 text-slate-200' }}">{{ ucfirst($e->status) }}</span></td>
           <td class="p-3"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background: {{ $e->workType?->colour }}"></span>{{ $e->workType?->is_other && $e->other_description ? 'Other — '.$e->other_description : ($e->workType?->name ?? '—') }}</td>
@@ -47,7 +49,7 @@
           <td class="p-3">{{ $e->opener?->name ?? '—' }}</td>
         </tr>
       @empty
-        <tr><td colspan="9" class="p-8 text-center text-slate-400">No high risk work was logged in this period.</td></tr>
+        <tr><td colspan="10" class="p-8 text-center text-slate-400">No high risk work was logged in this period.</td></tr>
       @endforelse
       </tbody>
     </table>
