@@ -142,7 +142,7 @@ class EntryController extends Controller
     {
         $f = $request->only(['from', 'to', 'status', 'work_type_id', 'area_id', 'q']);
         $q = $this->historyQuery($f);
-        $name = 'csem-history-'.now()->format('Ymd-Hi').'.csv';
+        $name = 'hwrt-history-'.now()->format('Ymd-Hi').'.csv';
 
         return response()->streamDownload(function () use ($q) {
             $out = fopen('php://output', 'w');
