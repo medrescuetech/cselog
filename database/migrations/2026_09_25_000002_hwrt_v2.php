@@ -52,6 +52,20 @@ return new class extends Migration
         Schema::table('entries', function (Blueprint $table) {
             $table->string('hrw_ref', 32)->nullable()->unique()->after('id');
             $table->string('other_description', 160)->nullable()->after('work_type_id');
+            $table->dateTime('planned_start_at')->nullable()->after('status');
+            $table->foreignId('scheduled_by')->nullable()->after('planned_start_at')->constrained('users')->nullOnDelete();
+        });
+
+        Schema::table('entries', function (Blueprint $table) {
+            $table->dateTime('opened_at')->nullable()->change();
+            $table->foreignId('opened_by')->nullable()->change();
+        });
+
+        Schema::table('locations', function (Blueprint $table) {
+            $table->string('document_path', 500)->nullable();
+            $table->string('document_name', 255)->nullable();
+            $table->dateTime('document_uploaded_at')->nullable();
+            $table->foreignId('document_uploaded_by')->nullable()->constrained('users')->nullOnDelete();
         });
 
         foreach (DB::table('entries')->orderBy('id')->get(['id']) as $entry) {
@@ -68,9 +82,20 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::table('locations', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('document_uploaded_by');
+            $table->dropColumn(['document_path', 'document_name', 'document_uploaded_at']);
+        });
+
         Schema::table('entries', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('scheduled_by');
             $table->dropUnique(['hrw_ref']);
-            $table->dropColumn(['hrw_ref', 'other_description']);
+            $table->dropColumn(['hrw_ref', 'other_description', 'planned_start_at']);
+        });
+
+        Schema::table('entries', function (Blueprint $table) {
+            $table->dateTime('opened_at')->nullable(false)->change();
+            $table->foreignId('opened_by')->nullable(false)->change();
         });
 
         Schema::table('work_types', function (Blueprint $table) {
