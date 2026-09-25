@@ -144,11 +144,25 @@ class RefreshHwrtMap extends Command
             }
         }
 
-        if (! $matches) {
-            throw new \RuntimeException("Could not discover an ArcGIS imagery service matching '{$query}'.");
+        if ($matches) {
+            return $matches[0];
         }
 
-        return $matches[0];
+        // Fallback to the source recorded with the packaged Site C/F imagery.
+        $manifestPath = $root.'/manifest.json';
+        if (is_file($manifestPath)) {
+            $manifest = json_decode((string) file_get_contents($manifestPath), true);
+            foreach ($manifest['rasters'] ?? [] as $raster) {
+                $source = $raster['source'] ?? null;
+                if (str_starts_with((string) ($raster['id'] ?? ''), 'site-cf')
+                    && is_string($source)
+                    && str_contains($source, '/MapServer')) {
+                    return $source;
+                }
+            }
+        }
+
+        throw new \RuntimeException("Could not discover an ArcGIS imagery service matching '{$query}' and no packaged fallback source exists.");
     }
 
     private function due(string $cadence, ?string $lastSuccess): bool
