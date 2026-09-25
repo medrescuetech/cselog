@@ -20,7 +20,7 @@ class ReportController extends Controller
 
         $entries = Entry::query()
             ->with(['workType', 'area', 'opener', 'closer'])
-            ->where('opened_at', '>=', now()->subDays($days)->startOfDay())
+            ->where('created_at', '>=', now()->subDays($days)->startOfDay())
             ->orderByDesc('opened_at')
             ->paginate(100)
             ->withQueryString();
@@ -35,6 +35,7 @@ class ReportController extends Controller
 
         $summary = [
             'total' => (clone $query)->count(),
+            'pending' => (clone $query)->where('status', 'pending')->count(),
             'open' => (clone $query)->where('status', 'open')->count(),
             'closed' => (clone $query)->where('status', 'closed')->count(),
             'cancelled' => (clone $query)->where('status', 'cancelled')->count(),
@@ -92,7 +93,7 @@ class ReportController extends Controller
         return $request->validate([
             'from' => 'nullable|date',
             'to' => 'nullable|date',
-            'status' => 'nullable|in:open,closed,cancelled',
+            'status' => 'nullable|in:pending,open,closed,cancelled',
             'work_type_id' => 'nullable|integer|exists:work_types,id',
             'area_id' => 'nullable|integer|exists:areas,id',
             'q' => 'nullable|string|max:120',
