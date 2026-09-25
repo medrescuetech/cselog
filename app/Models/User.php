@@ -31,7 +31,13 @@ class User extends Authenticatable
         ];
     }
 
-    public const ROLES = ['viewer' => 0, 'logger' => 1, 'supervisor' => 2, 'admin' => 3];
+    public const ROLES = [
+        'map_only' => 0,
+        'viewer' => 1,
+        'logger' => 2,
+        'supervisor' => 3,
+        'admin' => 4,
+    ];
 
     public function atLeast(string $role): bool
     {

@@ -5,7 +5,7 @@
 <form method="post" action="{{ route('login') }}" class="w-full max-w-sm bg-slate-800 rounded-xl p-6 space-y-4 shadow-xl">
   @csrf
   <h1 class="text-2xl font-bold">{{ config('app.name') }}</h1>
-  <p class="text-slate-400 text-sm">Confined space &amp; site work log</p>
+  <p class="text-slate-400 text-sm">High Risk Work Tracker &amp; site log</p>
   @error('email') <p class="text-red-400 text-sm">{{ $message }}</p> @enderror
   <label class="block"><span class="text-sm text-slate-300">Email</span>
     <input name="email" type="email" value="{{ old('email') }}" required autofocus class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-3 text-lg"></label>

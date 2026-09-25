@@ -18,6 +18,11 @@ class Location extends Model
         return $this->belongsTo(Area::class);
     }
 
+    public function mergedInto(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'merged_into_id');
+    }
+
     public function scopeActive($q)
     {
         return $q->where('status', 'active')->whereNull('merged_into_id');

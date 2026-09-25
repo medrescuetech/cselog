@@ -1,7 +1,7 @@
-/* CSEM map: Leaflet on CRS.Simple where 1 unit = 1 m of MGA50 (EPSG:28350).
+/* HRWT map: Leaflet on CRS.Simple where 1 unit = 1 m of MGA50 (EPSG:28350).
  * latlng = [-northing, easting] (Simple's y grows downward, so northing is negated).
  * Layers come from the sitemap manifest (/api/layers); nothing here knows about lat/lng. */
-window.CsemMap = (function () {
+window.HrwtMap = (function () {
   const toLL = (e, n) => L.latLng(-n, e);
   const fromLL = ll => ({ e: ll.lng, n: -ll.lat });
   const Z = { imagery: 10, prints: 20, plan: 30 };
@@ -19,7 +19,7 @@ window.CsemMap = (function () {
     for (const r of m.rasters) {
       if (opts.skipPrints && r.group === 'prints') continue;
       const b = L.latLngBounds(toLL(r.extent.xmin, r.extent.ymin), toLL(r.extent.xmax, r.extent.ymax));
-      const ov = L.imageOverlay(r.url, b, { opacity: r.opacity, zIndex: Z[r.group] || 25, className: r.group === 'imagery' && !r.id.startsWith('basemap') ? 'csem-nodata-black' : '' });
+      const ov = L.imageOverlay(r.url, b, { opacity: r.opacity, zIndex: Z[r.group] || 25, className: r.group === 'imagery' && !r.id.startsWith('basemap') ? 'hrwt-nodata-black' : '' });
       if (r.default_visible) ov.addTo(map);
       if (r.group === 'plan') plan.push(ov);
       overlays[r.title] = ov;
@@ -60,7 +60,7 @@ window.CsemMap = (function () {
     const ring = en.band === 'red' ? '#ef4444' : en.band === 'amber' ? '#f59e0b' : '#ffffff';
     const dash = en.location_id ? '' : 'stroke-dasharray:3 2;';
     return L.divIcon({
-      className: 'csem-pin', iconSize: [30, 42], iconAnchor: [15, 40], popupAnchor: [0, -36],
+      className: 'hrwt-pin', iconSize: [30, 42], iconAnchor: [15, 40], popupAnchor: [0, -36],
       html: `<svg width="30" height="42" viewBox="0 0 30 42"><path d="M15 41 C15 41 2 24 2 15 A13 13 0 0 1 28 15 C28 24 15 41 15 41Z" fill="${en.colour}" stroke="${ring}" stroke-width="3" style="${dash}"/><circle cx="15" cy="15" r="5" fill="#fff"/></svg>`,
     });
   }

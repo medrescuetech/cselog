@@ -7,8 +7,8 @@ are known. Where this conflicts with an earlier doc, this one wins.
 
 | Item | Value |
 |---|---|
-| Site | Perdaman Urea Project (PR25), Burrup Peninsula WA. Work areas: Site F (process plant), Site C (construction/laydown), Port/MOF, Conveyor corridor, LA30/LA44. |
-| Map data | **Tier 3.** Weekly drone imagery + boundaries/named-infrastructure polygons, all MGA Zone 50 (EPSG:28350), packaged in `sitemap/` (see its README) by the scripts in `sitemap/tools/`. Plus the SCJV site map drawing (PDF). |
+| Site | site project (PR25), Burrup Peninsula WA. Work areas: Site F (process plant), Site C (construction/laydown), Port/MOF, Conveyor corridor, LA30/LA44. |
+| Map data | **Tier 3.** Weekly drone imagery + boundaries/named-infrastructure polygons, all MGA Zone 50 (EPSG:28350), packaged in `sitemap/` (see its README) by the scripts in `sitemap/tools/`. Plus the site map drawing (PDF). |
 | App scope | Control-room log with a live map. Pins over a fixed site image. **No zoom-out beyond the site, no GPS navigation, no wayfinding.** |
 | Hosting | cPanel shared hosting, deployed from GitHub. |
 | Stack | PHP 8.2 / Laravel 11 / MySQL / Blade + Alpine + Tailwind / Leaflet. |
@@ -145,10 +145,10 @@ Effort is in Devin sessions. Each phase ends deployed to the cPanel staging subd
 1. cPanel details: SSH yes/no, PHP version, MySQL, cron, staging subdomain (Q17–20 in `07`).
 2. Confirm login is per person, and who the first admin is.
 3. Alert thresholds (default 2 h amber / 4 h red) and who receives overdue emails.
-4. Product name (CSEM stays unless told otherwise).
+4. Product name: HRWT — High Risk Work Tracker.
 
 ## Immediate next steps
 
 1. Phase 0 on a `feature/phase-0-skeleton` branch → PR → deploy to staging.
-2. In parallel, rasterise the SCJV PDF and prototype the two-layer map statically
+2. In parallel, rasterise the site PDF and prototype the two-layer map statically
    (`sitemap/viewer.html` — done, see `sitemap/README.md`) to validate the MGA50-on-CRS.Simple approach early.
