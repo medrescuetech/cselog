@@ -7,7 +7,9 @@ window.HrwtMap = (function () {
   const Z = { imagery: 10, prints: 20, plan: 30 };
 
   async function create(el, opts = {}) {
-    const m = await fetch('/api/layers').then(r => r.json());
+    const lRes = await fetch('/api/layers');
+    if (!lRes.ok) throw new Error(`Failed to load layers manifest: ${lRes.status}`);
+    const m = await lRes.json();
     const ext = m.extent;
     const map = L.map(el, {
       crs: L.CRS.Simple, minZoom: -5, maxZoom: 4, zoomSnap: 0.25, attributionControl: false,
@@ -25,28 +27,50 @@ window.HrwtMap = (function () {
       overlays[r.title] = ov;
     }
 
-    // Areas + landmarks from the app DB (already EPSG:28350 GeoJSON)
-    const areas = L.geoJSON(await fetch('/api/areas').then(r => r.json()), {
-      coordsToLatLng: c => toLL(c[0], c[1]),
-      style: f => ({ color: f.properties.colour || '#fff', weight: f.properties.kind === 'infrastructure' ? 1 : 2, fill: f.properties.kind === 'infrastructure', fillOpacity: 0.05 }),
-      onEachFeature: (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' }),
-    });
-    if (opts.areas !== false) areas.addTo(map);
-    overlays['Areas & structures'] = areas;
-
-    const landmarks = L.layerGroup();
-    for (const lm of await fetch('/api/landmarks').then(r => r.json())) {
-      L.circleMarker(toLL(lm.easting, lm.northing), { radius: 3, color: '#fff', weight: 1, fillColor: '#ff5f1f', fillOpacity: 1 })
-        .bindTooltip(lm.name, { direction: 'top' }).addTo(landmarks);
+    // Fit bounds immediately after adding rasters so the basemap is rendered in viewport before optional fetch calls
+    const cf = m.rasters.find(r => r.id.startsWith('site-cf') && r.default_visible) || m.rasters[0];
+    if (cf) {
+      map.fitBounds(L.latLngBounds(toLL(cf.extent.xmin, cf.extent.ymin), toLL(cf.extent.xmax, cf.extent.ymax)));
     }
-    overlays['Landmark labels'] = landmarks;
+
+    // Areas DB layer (optional, handled resiliently)
+    if (opts.areas !== false) {
+      try {
+        const aRes = await fetch('/api/areas');
+        if (aRes.ok) {
+          const aData = await aRes.json();
+          const areas = L.geoJSON(aData, {
+            coordsToLatLng: c => toLL(c[0], c[1]),
+            style: f => ({ color: f.properties.colour || '#fff', weight: f.properties.kind === 'infrastructure' ? 1 : 2, fill: f.properties.kind === 'infrastructure', fillOpacity: 0.05 }),
+            onEachFeature: (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' }),
+          });
+          areas.addTo(map);
+          overlays['Areas & structures'] = areas;
+        }
+      } catch (err) {
+        console.warn('Could not load areas overlay:', err);
+      }
+    }
+
+    // Landmarks DB layer (optional, handled resiliently)
+    try {
+      const lmRes = await fetch('/api/landmarks');
+      if (lmRes.ok) {
+        const lmData = await lmRes.json();
+        const landmarks = L.layerGroup();
+        for (const lm of lmData) {
+          L.circleMarker(toLL(lm.easting, lm.northing), { radius: 3, color: '#fff', weight: 1, fillColor: '#ff5f1f', fillOpacity: 1 })
+            .bindTooltip(lm.name, { direction: 'top' }).addTo(landmarks);
+        }
+        overlays['Landmark labels'] = landmarks;
+      }
+    } catch (err) {
+      console.warn('Could not load landmarks overlay:', err);
+    }
 
     const pins = L.layerGroup().addTo(map);
     overlays['Open entries'] = pins;
     if (opts.layerControl !== false) L.control.layers(null, overlays, { collapsed: opts.collapsed ?? true }).addTo(map);
-
-    const cf = m.rasters.find(r => r.id.startsWith('site-cf') && r.default_visible) || m.rasters[0];
-    map.fitBounds(L.latLngBounds(toLL(cf.extent.xmin, cf.extent.ymin), toLL(cf.extent.xmax, cf.extent.ymax)));
 
     return {
       map, pins, overlays, toLL, fromLL, manifest: m,
