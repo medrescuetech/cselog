@@ -15,6 +15,17 @@ class Entry extends Model
         'opened_at' => 'datetime', 'closed_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::created(function (Entry $entry): void {
+            if (! $entry->hrw_ref) {
+                $entry->forceFill([
+                    'hrw_ref' => 'HRW-'.str_pad((string) $entry->id, 6, '0', STR_PAD_LEFT),
+                ])->saveQuietly();
+            }
+        });
+    }
+
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
@@ -55,18 +66,18 @@ class Entry extends Model
         return (int) $this->opened_at->diffInSeconds($this->closed_at ?? now());
     }
 
-    /** none | amber | red, from config thresholds (hours). */
     public function ageBand(): string
     {
         if ($this->status !== 'open') {
             return 'none';
         }
+
         $h = $this->elapsedSeconds() / 3600;
-        if ($h >= config('csem.red_hours')) {
+        if ($h >= config('hwrt.red_hours')) {
             return 'red';
         }
 
-        return $h >= config('csem.amber_hours') ? 'amber' : 'none';
+        return $h >= config('hwrt.amber_hours') ? 'amber' : 'none';
     }
 
     public function log(string $event, ?array $changes = null): void
