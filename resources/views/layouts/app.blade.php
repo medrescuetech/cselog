@@ -21,6 +21,9 @@
     @if (auth()->user()?->atLeast('supervisor'))
       <a href="{{ route('errors.index') }}" class="px-3 py-2 rounded {{ request()->routeIs('errors.*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Errors</a>
     @endif
+    @if (auth()->user()?->atLeast('admin'))
+      <a href="{{ route('admin.users.index') }}" class="px-3 py-2 rounded {{ request()->routeIs('admin.users.*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Users</a>
+    @endif
     <div class="flex-1"></div>
     @if (auth()->user()?->atLeast('logger'))
       <a href="{{ route('entries.create') }}" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 font-semibold">+ Log entry</a>

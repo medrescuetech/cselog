@@ -42,6 +42,21 @@ class EntryFlowTest extends TestCase
         $this->actingAs($this->viewer)->post('/log', [])->assertForbidden();
     }
 
+    public function test_open_board_has_explicit_table_headers(): void
+    {
+        $this->actingAs($this->viewer)
+            ->get('/board')
+            ->assertOk()
+            ->assertSee('Elapsed')
+            ->assertSee('Type')
+            ->assertSee('Location')
+            ->assertSee('Area')
+            ->assertSee('Permit')
+            ->assertSee('Notes / Reported by')
+            ->assertSee('Opened')
+            ->assertSee('Opened by');
+    }
+
     public function test_inactive_user_cannot_login(): void
     {
         $u = User::factory()->create(['active' => false, 'password' => 'secret123']);
