@@ -1,0 +1,81 @@
+name: Visual map acceptance
+
+on:
+  push:
+    branches:
+      - "fix/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  map-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Configure application
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          php artisan key:generate
+          php artisan migrate:fresh --seed
+          php artisan sitemap:import
+
+      - name: Run PHPUnit
+        run: php artisan test
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Start Laravel test server
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/browser-test-server.log 2>&1 &
+          echo $! > /tmp/csem-server.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat storage/logs/browser-test-server.log
+          exit 1
+
+      - name: Run visible map acceptance tests
+        env:
+          APP_URL: http://127.0.0.1:8000
+        run: npm run test:browser
+
+      - name: Upload map screenshots and browser report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-visual-acceptance
+          path: |
+            test-results/
+            playwright-report/
+            storage/logs/browser-test-server.log
+          if-no-files-found: warn
+          retention-days: 14
