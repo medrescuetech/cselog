@@ -41,9 +41,9 @@ class MapController extends Controller
 
     private function manifest(): array
     {
-        $path = rtrim(config('csem.sitemap_path'), '/').'/manifest.json';
+        $path = rtrim(config('hwrt.sitemap_path'), '/').'/manifest.json';
         $m = File::exists($path) ? json_decode(File::get($path), true) : ['rasters' => [], 'vectors' => [], 'extent' => null];
-        $base = rtrim(config('csem.sitemap_url'), '/');
+        $base = rtrim(config('hwrt.sitemap_url'), '/');
         foreach ($m['rasters'] as &$r) {
             $r['url'] = $base.'/'.$r['file'];
         }
