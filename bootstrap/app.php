@@ -7,7 +7,6 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        $exceptions->report(function (Throwable $e): void {
+        $exceptions->report(function (\Throwable $e): void {
             $context = [
                 'event_id' => (string) Str::uuid(),
                 'exception' => $e::class,
@@ -42,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'email' => $request->user()?->email,
                     'ip' => $request->ip(),
                 ];
-            } catch (Throwable) {
+            } catch (\Throwable) {
                 // Console/bootstrap exception: request context may not exist.
             }
 
