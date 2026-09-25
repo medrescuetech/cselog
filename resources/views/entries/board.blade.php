@@ -10,6 +10,49 @@
     <a href="{{ route('map') }}" class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-sm">Map</a>
   </div>
 
+  <div x-show="pendingToday.length" x-cloak class="mb-5">
+    <div class="flex items-baseline gap-2 mb-2">
+      <h2 class="text-lg font-semibold text-amber-300">PENDING TODAY (<span x-text="pendingToday.length"></span>)</h2>
+      <span class="text-xs text-slate-500">Australia/Perth</span>
+      <div class="flex-1"></div>
+      <a href="{{ route('pending') }}" class="text-sm text-slate-400 hover:text-white">View all pending</a>
+    </div>
+    <div class="overflow-x-auto rounded-xl border border-amber-800/70 bg-amber-950/20">
+      <table class="w-full min-w-[900px] text-sm">
+        <thead class="bg-amber-950/50 text-amber-100 text-left text-xs uppercase tracking-wide">
+          <tr>
+            <th class="p-3">HRW ID</th>
+            <th class="p-3">Planned</th>
+            <th class="p-3">Type</th>
+            <th class="p-3">Location</th>
+            <th class="p-3">Permit</th>
+            <th class="p-3">Notes</th>
+            <th class="p-3 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-amber-900/40">
+          <template x-for="e in pendingToday" :key="'pending-'+e.id">
+            <tr>
+              <td class="p-3 font-mono font-semibold" x-text="e.hrw_ref"></td>
+              <td class="p-3 font-mono whitespace-nowrap"
+                  x-text="new Date(e.planned_start_at).toLocaleTimeString('en-AU', {timeZone:'Australia/Perth', hour:'2-digit', minute:'2-digit'})"></td>
+              <td class="p-3" x-text="e.type_display || e.type"></td>
+              <td class="p-3 font-medium" x-text="e.location"></td>
+              <td class="p-3 font-mono" x-text="e.permit_no || '—'"></td>
+              <td class="p-3" x-text="e.notes || '—'"></td>
+              <td class="p-3 text-right">
+                <form method="post" :action="`/entries/${e.id}/start`">
+                  <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                  <button class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-2 font-semibold">Start</button>
+                </form>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/40">
     <table class="w-full min-w-[1120px] border-collapse text-sm">
       <thead class="bg-slate-950 text-slate-300 text-xs uppercase tracking-wide">
@@ -99,6 +142,7 @@
 function board() {
   return {
     entries: @json($entries),
+    pendingToday: @json($pendingToday),
     now: Date.now(), last: Date.now(), ago: 'just now', closing: null, highlight: {{ (int) session('highlight', 0) }},
     init() {
       setInterval(() => { this.now = Date.now(); this.ago = Math.round((this.now - this.last) / 1000) + 's ago'; }, 1000);
@@ -111,9 +155,10 @@ function board() {
         if (!response.ok) throw new Error(`Open board refresh failed (HTTP ${response.status})`);
         const j = await response.json();
         this.entries = j.entries;
+        this.pendingToday = j.pending_today || [];
         this.last = Date.now();
       } catch (error) {
-        console.error('CSEM board refresh failed', error);
+        console.error('HWRT board refresh failed', error);
         window.hwrtReportError?.('board-refresh', error.message || 'Open board refresh failed', { stack: error.stack || null });
       }
     },
