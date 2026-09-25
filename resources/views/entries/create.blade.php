@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Log entry')
+@section('title', 'Log high risk work')
 @push('head')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -7,10 +7,10 @@
 @endpush
 
 @section('content')
-<form method="post" action="{{ route('entries.store') }}" class="max-w-xl mx-auto space-y-5" x-data="logForm()" x-init="init()">
+<form method="post" action="{{ route('entries.store') }}" class="max-w-xl mx-auto space-y-5" x-data="logForm(@js($workTypes->map(fn ($t) => ['id' => $t->id, 'name' => $t->name, 'is_other' => $t->is_other, 'requires_note' => $t->requires_note, 'notes_prompt' => $t->notes_prompt])->values()))" x-init="init()">
   @csrf
   <div class="flex items-baseline justify-between">
-    <h1 class="text-2xl font-bold">Log entry</h1>
+    <h1 class="text-2xl font-bold">Log high risk work</h1>
     <button type="button" @click="late = !late" class="font-mono text-2xl text-slate-300 hover:text-white" title="Tap to log a late entry">
       <span x-text="clock"></span> <span class="text-sm text-slate-500" x-show="!late">now</span>
     </button>
@@ -28,12 +28,19 @@
     <input name="late_reason" placeholder="Reason (e.g. radio traffic)" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
   </div>
 
-  <label class="block"><span class="text-sm text-slate-300">Type</span>
-    <select name="work_type_id" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3 text-lg">
+  <label class="block"><span class="text-sm text-slate-300">High risk work type</span>
+    <select name="work_type_id" x-model.number="workTypeId" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3 text-lg">
       @foreach ($workTypes as $t)
         <option value="{{ $t->id }}" @selected(old('work_type_id', $defaultType?->id) == $t->id)>{{ $t->name }}</option>
       @endforeach
     </select></label>
+
+  <label class="block" x-show="selectedType()?.is_other" x-cloak>
+    <span class="text-sm text-slate-300">Describe the high risk work</span>
+    <input name="other_description" value="{{ old('other_description') }}" :required="selectedType()?.is_other"
+           class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3"
+           placeholder="e.g. pressure testing / lifting operation">
+  </label>
 
   {{-- Location picker --}}
   <div>
@@ -71,8 +78,12 @@
     </div>
   </div>
 
-  <label class="block"><span class="text-sm text-slate-300">Notes</span>
-    <textarea name="notes" rows="2" placeholder="2 crew, gas tested…" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3">{{ old('notes') }}</textarea></label>
+  <label class="block"><span class="text-sm text-slate-300">Notes <span x-show="selectedType()?.requires_note" class="text-amber-400">(required)</span></span>
+    <textarea name="notes" rows="3" :required="selectedType()?.requires_note"
+              :placeholder="selectedType()?.notes_prompt || 'High risk work notes…'"
+              class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3">{{ old('notes') }}</textarea>
+    <div class="mt-1 text-xs text-slate-500" x-show="selectedType()?.notes_prompt" x-text="selectedType()?.notes_prompt"></div>
+  </label>
   <div class="grid grid-cols-2 gap-3">
     <label class="block"><span class="text-sm text-slate-300">Permit no.</span>
       <input name="permit_no" value="{{ old('permit_no') }}" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3"></label>
@@ -80,7 +91,7 @@
       <input name="reported_by" value="{{ old('reported_by') }}" placeholder="Ch.2 – Dave" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3"></label>
   </div>
 
-  <button :disabled="!picked && !adhoc.e" class="w-full rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 py-4 text-xl font-bold">SUBMIT</button>
+  <button :disabled="!picked && !adhoc.e" class="w-full rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 py-4 text-xl font-bold">SUBMIT HIGH RISK WORK</button>
 
   {{-- S2: pin drop --}}
   <div x-show="pinOpen" x-cloak class="fixed inset-0 z-50 bg-slate-950 flex flex-col">
@@ -112,8 +123,11 @@
 
 @push('scripts')
 <script>
-function logForm() {
+function logForm(types) {
   return {
+    types,
+    workTypeId: {{ (int) old('work_type_id', $defaultType?->id ?? 0) }},
+    selectedType() { return this.types.find(t => Number(t.id) === Number(this.workTypeId)) || null; },
     clock: '', late: false, openedAt: '',
     q: '', results: [], picked: null, adhoc: {},
     pinOpen: false, pin: { e: null, n: null, name: '', area: null, nearby: [], error: '' }, mapObj: null, marker: null,
