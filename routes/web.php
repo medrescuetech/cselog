@@ -5,6 +5,7 @@ use App\Http\Controllers\EntryController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthController::class, 'show'])->name('login')->middleware('guest');
@@ -34,6 +35,9 @@ Route::middleware(['auth', 'role:supervisor'])->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/error/clear', [ErrorLogController::class, 'clear'])->name('errors.clear');
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::patch('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
 });
 
 Route::middleware(['auth', 'role:logger'])->group(function () {
