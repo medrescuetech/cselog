@@ -8,7 +8,7 @@
     <p class="text-sm text-slate-400 mt-1">HWRT administration and system configuration.</p>
   </div>
 
-  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
     <a href="{{ route('settings.users.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
       <div class="text-lg font-semibold">Users</div>
       <p class="text-sm text-slate-400 mt-1">Create users, change User/Admin access, deactivate accounts and reset passwords.</p>
@@ -17,6 +17,16 @@
     <a href="{{ route('settings.work-types.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
       <div class="text-lg font-semibold">High Risk Work Types</div>
       <p class="text-sm text-slate-400 mt-1">Customise the defined list, colours, Notes prompts, Other and active types.</p>
+    </a>
+
+    <a href="{{ route('settings.locations.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
+      <div class="text-lg font-semibold">Locations & PDFs</div>
+      <p class="text-sm text-slate-400 mt-1">Review catalogue locations and attach optional protected PDF documents.</p>
+    </a>
+
+    <a href="{{ route('settings.landmarks.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
+      <div class="text-lg font-semibold">Landmarks</div>
+      <p class="text-sm text-slate-400 mt-1">Add or edit key map landmarks manually, including by clicking the map.</p>
     </a>
 
     <a href="#appearance" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
