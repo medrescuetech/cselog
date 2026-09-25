@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image, ImageDraw
 
-UA = {"User-Agent": "csem-map-fetch/1.0"}
+UA = {"User-Agent": "hwrt-map-fetch/2.0"}
 
 DEFAULT_RGB = (40, 40, 40)
 
@@ -96,7 +96,7 @@ def main():
     ap.add_argument("imagery_json")
     ap.add_argument("out")
     ap.add_argument("layers", nargs="+")
-    ap.add_argument("--cache", default=os.path.expanduser("~/.cache/csem-arcgis"))
+    ap.add_argument("--cache", default=os.path.expanduser("~/.cache/hwrt-arcgis"))
     ap.add_argument("--width", type=int, default=1, help="line width in px")
     ap.add_argument("--mono", action="store_true", help="ignore renderer colours, draw dark grey")
     a = ap.parse_args()
