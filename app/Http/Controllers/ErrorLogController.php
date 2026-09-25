@@ -10,7 +10,7 @@ class ErrorLogController extends Controller
 {
     private function path(): string
     {
-        return storage_path('logs/csem-errors.log');
+        return storage_path('logs/hwrt-errors.log');
     }
 
     public function index(Request $request)
@@ -30,7 +30,7 @@ class ErrorLogController extends Controller
         $path = $this->path();
         abort_unless(is_file($path), 404, 'Error log has not been created yet.');
 
-        return response()->download($path, 'csem-errors.log', [
+        return response()->download($path, 'hwrt-errors.log', [
             'Content-Type' => 'text/plain; charset=UTF-8',
             'Cache-Control' => 'no-store, private',
         ]);
@@ -43,7 +43,7 @@ class ErrorLogController extends Controller
             file_put_contents($path, '');
         }
 
-        Log::channel('csem_errors')->warning('Error log cleared by administrator.', [
+        Log::channel('hwrt_errors')->warning('Error log cleared by administrator.', [
             'user_id' => $request->user()?->id,
             'email' => $request->user()?->email,
             'ip' => $request->ip(),
@@ -67,7 +67,7 @@ class ErrorLogController extends Controller
 
         $context = is_array($data['context'] ?? null) ? $data['context'] : [];
 
-        Log::channel('csem_errors')->warning('Browser error: '.$data['message'], [
+        Log::channel('hwrt_errors')->warning('Browser error: '.$data['message'], [
             'event_id' => (string) Str::uuid(),
             'kind' => $data['kind'] ?? 'browser',
             'url' => $data['url'] ?? $request->headers->get('referer'),
