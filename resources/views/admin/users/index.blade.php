@@ -90,11 +90,16 @@
           </div>
           <div class="lg:col-span-2">
             <label class="block text-xs text-slate-400 mb-1">Role</label>
-            <select name="role" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
-              @foreach ($roles as $role)
-                <option value="{{ $role }}" @selected($user->role === $role)>{{ ucfirst($role) }}</option>
-              @endforeach
-            </select>
+            @if ($user->id === auth()->id())
+              <input type="hidden" name="role" value="admin">
+              <div class="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 text-slate-300">Admin</div>
+            @else
+              <select name="role" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
+                @foreach ($roles as $role)
+                  <option value="{{ $role }}" @selected($user->role === $role)>{{ ucfirst($role) }}</option>
+                @endforeach
+              </select>
+            @endif
           </div>
           <div class="lg:col-span-2">
             <label class="block text-xs text-slate-400 mb-1">New password</label>
@@ -108,11 +113,12 @@
           </div>
           <div class="lg:col-span-1 flex lg:block gap-3">
             <label class="flex items-center gap-2 text-sm mb-2">
-              <input type="hidden" name="active" value="0">
-              <input type="checkbox" name="active" value="1" @checked($user->active)
-                     @disabled($user->id === auth()->id())>
               @if ($user->id === auth()->id())
                 <input type="hidden" name="active" value="1">
+                <input type="checkbox" checked disabled>
+              @else
+                <input type="hidden" name="active" value="0">
+                <input type="checkbox" name="active" value="1" @checked($user->active)>
               @endif
               <span>Active</span>
             </label>
