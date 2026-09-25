@@ -4,7 +4,7 @@
 @push('head')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/csem-map.js"></script>
+<script src="/js/hwrt-map.js"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }
   .leaflet-container { font: inherit; }
@@ -47,13 +47,13 @@
     if (!fatal) warningTimer = setTimeout(() => statusEl.classList.add('hidden'), 8000);
   }
 
-  mapEl.addEventListener('csem:warning', e => showNotice(e.detail.message, false));
-  mapEl.addEventListener('csem:error', e => showNotice(e.detail.message, true));
+  mapEl.addEventListener('hwrt:warning', e => showNotice(e.detail.message, false));
+  mapEl.addEventListener('hwrt:error', e => showNotice(e.detail.message, true));
 
   try {
     if (!window.L) throw new Error('Leaflet did not load. Check network/CDN access.');
 
-    const cm = await CsemMap.create('map', { collapsed: false });
+    const cm = await HwrtMap.create('map', { collapsed: false });
     const { map, pins, toLL, fromLL } = cm;
 
     document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
@@ -87,19 +87,19 @@
 
     async function refresh() {
       try {
-        const j = await CsemMap.fetchJson('/api/open', 'Open entries');
+        const j = await HwrtMap.fetchJson('/api/open', 'Open entries');
         const seen = new Set();
         for (const en of j.entries) {
           seen.add(en.id);
           let mk = markers.get(en.id);
           if (!mk) {
             mk = L.marker(toLL(en.easting, en.northing), {
-              icon: CsemMap.entryIcon(en),
+              icon: HwrtMap.entryIcon(en),
               zIndexOffset: 1000,
             }).addTo(pins);
             markers.set(en.id, mk);
           } else {
-            mk.setIcon(CsemMap.entryIcon(en));
+            mk.setIcon(HwrtMap.entryIcon(en));
           }
           mk.bindTooltip(`${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -36] });
           mk.bindPopup(popup(en));
@@ -113,7 +113,7 @@
         document.getElementById('count').textContent = `${j.entries.length} open`;
       } catch (error) {
         console.error('CSEM map: open entries unavailable', error);
-        window.csemReportError?.('map-open-entries', error.message || 'Open entries refresh failed', {
+        window.hwrtReportError?.('map-open-entries', error.message || 'Open entries refresh failed', {
           stack: error.stack || null,
         });
         showNotice('Map loaded, but open entries could not be refreshed.', false);
@@ -121,16 +121,16 @@
     }
 
     await refresh();
-    setInterval(refresh, {{ config('csem.poll_seconds') }} * 1000);
+    setInterval(refresh, {{ config('hwrt.poll_seconds') }} * 1000);
 
     const focus = new URLSearchParams(location.search);
     if (focus.get('e') && focus.get('n')) cm.focus(+focus.get('e'), +focus.get('n'), 2);
   } catch (error) {
     console.error('CSEM map failed to initialise', error);
-    window.csemReportError?.('map-init', error.message || 'Map failed to initialise', {
+    window.hwrtReportError?.('map-init', error.message || 'Map failed to initialise', {
       stack: error.stack || null,
     });
-    mapEl.dataset.csemMapState = 'error';
+    mapEl.dataset.hwrtMapState = 'error';
     showNotice('Map imagery could not be loaded. ' + (error.message || ''), true);
   }
 })();
