@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EntryController;
+use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MapController;
 use Illuminate\Support\Facades\Route;
@@ -17,12 +18,22 @@ Route::middleware(['auth', 'role:viewer'])->group(function () {
     Route::get('/history.csv', [EntryController::class, 'csv'])->name('history.csv');
     Route::get('/map', [MapController::class, 'index'])->name('map');
 
-    // JSON used by the board/map pollers
+    // JSON used by the board/map pollers and browser diagnostics.
     Route::get('/api/open', [EntryController::class, 'openJson'])->name('api.open');
     Route::get('/api/layers', [MapController::class, 'layers'])->name('api.layers');
     Route::get('/api/areas', [MapController::class, 'areas'])->name('api.areas');
     Route::get('/api/landmarks', [MapController::class, 'landmarks'])->name('api.landmarks');
     Route::get('/api/locations', [LocationController::class, 'search'])->name('api.locations');
+    Route::post('/api/client-errors', [ErrorLogController::class, 'client'])->name('api.client-errors');
+});
+
+Route::middleware(['auth', 'role:supervisor'])->group(function () {
+    Route::get('/error', [ErrorLogController::class, 'index'])->name('errors.index');
+    Route::get('/error/download', [ErrorLogController::class, 'download'])->name('errors.download');
+});
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::post('/error/clear', [ErrorLogController::class, 'clear'])->name('errors.clear');
 });
 
 Route::middleware(['auth', 'role:logger'])->group(function () {
