@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
             ['username' => strtolower((string) $username)],
             [
                 'name' => env('HWRT_ADMIN_NAME', 'Admin'),
-                'email' => env('HWRT_ADMIN_EMAIL') ?: null,
+                'email' => env('HWRT_ADMIN_EMAIL', env('CSEM_ADMIN_EMAIL')) ?: null,
                 'password' => env('HWRT_ADMIN_PASSWORD', env('CSEM_ADMIN_PASSWORD', 'changeme')),
                 'role' => 'admin',
                 'active' => true,
