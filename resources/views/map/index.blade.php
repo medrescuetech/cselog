@@ -62,7 +62,7 @@
       document.getElementById('coords').textContent = `E ${E.toFixed(1)}  N ${N.toFixed(1)}  MGA50`;
     });
 
-    const canClose = {{ auth()->user()->atLeast('logger') ? 'true' : 'false' }};
+    const canClose = true;
     const markers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
@@ -70,10 +70,12 @@
 
     function popup(en) {
       const el = document.createElement('div');
-      el.innerHTML = `<div class="font-semibold text-base">${esc(en.location)}</div>
-        <div class="text-xs">${esc(en.type)} · ${esc(en.area || '—')} · open <b>${fmtElapsed(en.elapsed_s)}</b></div>
+      el.innerHTML = `<div class="font-mono text-xs text-slate-400">${esc(en.hrw_ref || '')}</div>
+        <div class="font-semibold text-base">${esc(en.location)}</div>
+        <div class="text-xs">${esc(en.type_display || en.type)} · ${esc(en.area || '—')} · open <b>${fmtElapsed(en.elapsed_s)}</b></div>
         ${en.notes ? `<div class="text-xs mt-1">${esc(en.notes)}</div>` : ''}
-        <div class="text-xs text-slate-400 mt-1">${esc(new Date(en.opened_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))} · ${esc(en.opened_by || '')}${en.permit_no ? ' · permit ' + esc(en.permit_no) : ''}</div>`;
+        ${en.location_document_url ? `<div class="mt-2"><a href="${esc(en.location_document_url)}" target="_blank" rel="noopener" class="underline font-semibold">Open location PDF${en.location_document_name ? ' — ' + esc(en.location_document_name) : ''}</a></div>` : ''}
+        <div class="text-xs text-slate-400 mt-1">${esc(new Date(en.opened_at).toLocaleTimeString('en-AU', {timeZone:'Australia/Perth',hour:'2-digit',minute:'2-digit'}))} · ${esc(en.opened_by || '')}${en.permit_no ? ' · permit ' + esc(en.permit_no) : ''}</div>`;
       if (canClose) {
         const f = document.createElement('form');
         f.method = 'post';
@@ -112,7 +114,7 @@
         }
         document.getElementById('count').textContent = `${j.entries.length} open`;
       } catch (error) {
-        console.error('CSEM map: open entries unavailable', error);
+        console.error('HWRT map: open entries unavailable', error);
         window.hwrtReportError?.('map-open-entries', error.message || 'Open entries refresh failed', {
           stack: error.stack || null,
         });
@@ -126,7 +128,7 @@
     const focus = new URLSearchParams(location.search);
     if (focus.get('e') && focus.get('n')) cm.focus(+focus.get('e'), +focus.get('n'), 2);
   } catch (error) {
-    console.error('CSEM map failed to initialise', error);
+    console.error('HWRT map failed to initialise', error);
     window.hwrtReportError?.('map-init', error.message || 'Map failed to initialise', {
       stack: error.stack || null,
     });
