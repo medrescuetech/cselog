@@ -4,6 +4,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EntryController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\LocationSettingsController;
+use App\Http\Controllers\LandmarkSettingsController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MapSettingsController;
 use App\Http\Controllers\ReportController;
@@ -24,6 +26,11 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     Route::get('/log', [EntryController::class, 'create'])->name('entries.create');
     Route::post('/log', [EntryController::class, 'store'])->name('entries.store');
     Route::post('/entries/{entry}/close', [EntryController::class, 'close'])->name('entries.close');
+    Route::post('/entries/{entry}/start', [EntryController::class, 'start'])->name('entries.start');
+    Route::post('/entries/{entry}/cancel', [EntryController::class, 'cancel'])->name('entries.cancel');
+    Route::get('/pending', [EntryController::class, 'pending'])->name('pending');
+
+    Route::get('/locations/{location}/document', [LocationSettingsController::class, 'download'])->name('locations.document');
 
     Route::get('/logbook', [ReportController::class, 'logbook'])->name('logbook');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -57,6 +64,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::post('/settings/map', [MapSettingsController::class, 'update'])->name('settings.map.update');
     Route::post('/settings/map/refresh', [MapSettingsController::class, 'requestRefresh'])->name('settings.map.refresh');
+
+    Route::get('/settings/locations', [LocationSettingsController::class, 'index'])->name('settings.locations.index');
+    Route::post('/settings/locations/{location}/document', [LocationSettingsController::class, 'upload'])->name('settings.locations.document.upload');
+    Route::delete('/settings/locations/{location}/document', [LocationSettingsController::class, 'remove'])->name('settings.locations.document.remove');
+
+    Route::get('/settings/landmarks', [LandmarkSettingsController::class, 'index'])->name('settings.landmarks.index');
+    Route::post('/settings/landmarks', [LandmarkSettingsController::class, 'store'])->name('settings.landmarks.store');
+    Route::patch('/settings/landmarks/{landmark}', [LandmarkSettingsController::class, 'update'])->name('settings.landmarks.update');
 
     Route::get('/error', [ErrorLogController::class, 'index'])->name('errors.index');
     Route::get('/error/download', [ErrorLogController::class, 'download'])->name('errors.download');
