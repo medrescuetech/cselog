@@ -46,9 +46,11 @@ class MapController extends Controller
         $base = rtrim(config('hwrt.sitemap_url'), '/');
         foreach ($m['rasters'] as &$r) {
             $r['url'] = $base.'/'.$r['file'];
+            unset($r['source']);
         }
         foreach ($m['vectors'] ?? [] as &$v) {
             $v['url'] = $base.'/'.$v['file'];
+            unset($v['source']);
         }
 
         return $m;
