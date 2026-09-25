@@ -28,6 +28,7 @@ class EntryController extends Controller
             'location_label' => 'required_without:location_id|nullable|string|max:160',
             'easting' => 'required_without:location_id|nullable|numeric',
             'northing' => 'required_without:location_id|nullable|numeric',
+            'other_description' => 'nullable|string|max:160',
             'notes' => 'nullable|string|max:2000',
             'permit_no' => 'nullable|string|max:60',
             'reported_by' => 'nullable|string|max:120',
@@ -36,8 +37,11 @@ class EntryController extends Controller
         ]);
 
         $type = WorkType::findOrFail($d['work_type_id']);
+        if ($type->is_other && blank($d['other_description'] ?? null)) {
+            return back()->withErrors(['other_description' => 'Describe the high risk work when Other is selected.'])->withInput();
+        }
         if ($type->requires_note && blank($d['notes'] ?? null)) {
-            return back()->withErrors(['notes' => "{$type->name} needs a description."])->withInput();
+            return back()->withErrors(['notes' => "{$type->name} requires notes."])->withInput();
         }
 
         $location = isset($d['location_id']) ? Location::findOrFail($d['location_id']) : null;
@@ -61,6 +65,7 @@ class EntryController extends Controller
             'northing' => $n,
             'area_id' => $location?->area_id ?? Area::containing($e, $n)?->id,
             'work_type_id' => $type->id,
+            'other_description' => $type->is_other ? ($d['other_description'] ?? null) : null,
             'notes' => $d['notes'] ?? null,
             'permit_no' => $d['permit_no'] ?? null,
             'reported_by' => $d['reported_by'] ?? null,
@@ -141,15 +146,15 @@ class EntryController extends Controller
 
         return response()->streamDownload(function () use ($q) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['id', 'opened_at', 'closed_at', 'duration_min', 'status', 'location', 'easting', 'northing',
-                'area', 'work_type', 'permit_no', 'reported_by', 'notes', 'opened_by', 'closed_by', 'close_note']);
+            fputcsv($out, ['hrw_id', 'id', 'opened_at', 'closed_at', 'duration_min', 'status', 'location', 'easting', 'northing',
+                'area', 'work_type', 'other_type', 'permit_no', 'reported_by', 'notes', 'opened_by', 'closed_by', 'close_note']);
             $q->chunk(500, function ($rows) use ($out) {
                 foreach ($rows as $e) {
                     fputcsv($out, [
-                        $e->id, $e->opened_at, $e->closed_at,
+                        $e->hrw_ref, $e->id, $e->opened_at, $e->closed_at,
                         $e->closed_at ? round($e->elapsedSeconds() / 60) : null,
                         $e->status, $e->location_label, $e->easting, $e->northing,
-                        $e->area?->name, $e->workType?->name, $e->permit_no, $e->reported_by, $e->notes,
+                        $e->area?->name, $e->workType?->name, $e->other_description, $e->permit_no, $e->reported_by, $e->notes,
                         $e->opener?->name, $e->closer?->name, $e->close_note,
                     ]);
                 }
@@ -172,8 +177,12 @@ class EntryController extends Controller
             ->when($f['work_type_id'] ?? null, fn ($q, $v) => $q->where('work_type_id', $v))
             ->when($f['area_id'] ?? null, fn ($q, $v) => $q->where('area_id', $v))
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w
-                ->where('location_label', 'like', "%{$v}%")->orWhere('notes', 'like', "%{$v}%")
-                ->orWhere('permit_no', 'like', "%{$v}%")->orWhere('reported_by', 'like', "%{$v}%")))
+                ->where('hrw_ref', 'like', "%{$v}%")
+                ->orWhere('location_label', 'like', "%{$v}%")
+                ->orWhere('notes', 'like', "%{$v}%")
+                ->orWhere('other_description', 'like', "%{$v}%")
+                ->orWhere('permit_no', 'like', "%{$v}%")
+                ->orWhere('reported_by', 'like', "%{$v}%")))
             ->orderByDesc('opened_at');
     }
 
@@ -181,11 +190,17 @@ class EntryController extends Controller
     {
         return [
             'id' => $e->id,
+            'hrw_ref' => $e->hrw_ref,
             'location' => $e->location_label,
             'location_id' => $e->location_id,
             'easting' => $e->easting, 'northing' => $e->northing,
             'area' => $e->area?->name,
-            'type' => $e->workType->name, 'colour' => $e->workType->colour,
+            'type' => $e->workType->name,
+            'type_display' => $e->workType->is_other && $e->other_description
+                ? 'Other — '.$e->other_description
+                : $e->workType->name,
+            'other_description' => $e->other_description,
+            'colour' => $e->workType->colour,
             'notes' => $e->notes, 'permit_no' => $e->permit_no, 'reported_by' => $e->reported_by,
             'opened_at' => $e->opened_at->toIso8601String(),
             'opened_by' => $e->opener?->name,
