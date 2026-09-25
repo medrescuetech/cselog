@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -10,18 +9,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'active'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -31,10 +25,15 @@ class User extends Authenticatable
         ];
     }
 
-    public const ROLES = ['viewer' => 0, 'logger' => 1, 'supervisor' => 2, 'admin' => 3];
+    public const ROLES = ['user' => 0, 'admin' => 1];
 
     public function atLeast(string $role): bool
     {
         return (self::ROLES[$this->role] ?? -1) >= (self::ROLES[$role] ?? 99);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }
