@@ -189,11 +189,13 @@ class RefreshHwrtMap extends Command
 
     private function currentSiteCfBbox(string $root): string
     {
-        $sidecar = $root.'/imagery/site-cf-2026-09-14_L17_0.25m.json';
-        if (! is_file($sidecar)) {
+        $matches = glob($root.'/imagery/site-cf-*_L17_0.25m.json') ?: [];
+        if (! $matches) {
             throw new \RuntimeException('Current Site C/F imagery sidecar is missing; refusing to change map coverage.');
         }
 
+        sort($matches);
+        $sidecar = end($matches);
         $json = json_decode((string) file_get_contents($sidecar), true);
         $e = $json['extent_mga50'] ?? null;
         foreach (['xmin', 'ymin', 'xmax', 'ymax'] as $key) {
