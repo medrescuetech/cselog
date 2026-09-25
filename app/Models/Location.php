@@ -11,6 +11,7 @@ class Location extends Model
 
     protected $casts = [
         'easting' => 'float', 'northing' => 'float', 'verified' => 'bool', 'last_used_at' => 'datetime',
+        'document_uploaded_at' => 'datetime',
     ];
 
     public function area(): BelongsTo
