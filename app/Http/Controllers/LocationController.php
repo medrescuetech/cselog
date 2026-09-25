@@ -30,7 +30,7 @@ class LocationController extends Controller
     public function nearby(Request $request)
     {
         $d = $request->validate(['easting' => 'required|numeric', 'northing' => 'required|numeric']);
-        $near = Location::near($d['easting'], $d['northing'], config('csem.duplicate_radius_m'));
+        $near = Location::near($d['easting'], $d['northing'], config('hrwt.duplicate_radius_m'));
         $area = Area::containing($d['easting'], $d['northing']);
 
         return response()->json([

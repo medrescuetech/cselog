@@ -62,7 +62,7 @@ def main():
     xs = [l["extent"]["xmin"] for l in layers] + [l["extent"]["xmax"] for l in layers]
     ys = [l["extent"]["ymin"] for l in layers] + [l["extent"]["ymax"] for l in layers]
     manifest = {
-        "name": "Perdaman Urea Project (SCJV) site map",
+        "name": "site project site map",
         "crs": "EPSG:28350",
         "crs_name": "GDA94 / MGA zone 50 — units are metres (easting, northing)",
         "extent": {"xmin": min(xs), "ymin": min(ys), "xmax": max(xs), "ymax": max(ys)},

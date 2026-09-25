@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
  */
 class ImportSitemap extends Command
 {
-    protected $signature = 'sitemap:import {--path= : sitemap directory (default config csem.sitemap_path)}';
+    protected $signature = 'sitemap:import {--path= : sitemap directory (default config hrwt.sitemap_path)}';
 
     protected $description = 'Import areas and landmarks from sitemap/features/*.geojson';
 
@@ -40,7 +40,7 @@ class ImportSitemap extends Command
 
     public function handle(): int
     {
-        $dir = rtrim($this->option('path') ?: config('csem.sitemap_path'), '/').'/features';
+        $dir = rtrim($this->option('path') ?: config('hrwt.sitemap_path'), '/').'/features';
         $nAreas = $nLm = 0;
         foreach (self::FILES as $file => [$kind, $colour, $landmarks]) {
             $path = "{$dir}/{$file}";

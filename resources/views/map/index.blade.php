@@ -4,7 +4,7 @@
 @push('head')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/csem-map.js"></script>
+<script src="/js/hrwt-map.js"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }
   .leaflet-container { font: inherit; }
@@ -26,7 +26,7 @@
 @push('scripts')
 <script>
 (async () => {
-  const cm = await CsemMap.create('map', { collapsed: false });
+  const cm = await HrwtMap.create('map', { collapsed: false });
   const { map, pins, toLL, fromLL } = cm;
   document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
   map.on('mousemove', e => { const { e: E, n: N } = fromLL(e.latlng); document.getElementById('coords').textContent = `E ${E.toFixed(1)}  N ${N.toFixed(1)}  MGA50`; });
@@ -52,8 +52,8 @@
     for (const en of j.entries) {
       seen.add(en.id);
       let mk = markers.get(en.id);
-      if (!mk) { mk = L.marker(toLL(en.easting, en.northing), { icon: CsemMap.entryIcon(en), zIndexOffset: 1000 }).addTo(pins); markers.set(en.id, mk); }
-      else mk.setIcon(CsemMap.entryIcon(en));
+      if (!mk) { mk = L.marker(toLL(en.easting, en.northing), { icon: HrwtMap.entryIcon(en), zIndexOffset: 1000 }).addTo(pins); markers.set(en.id, mk); }
+      else mk.setIcon(HrwtMap.entryIcon(en));
       mk.bindTooltip(`${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -36] });
       mk.bindPopup(popup(en));
     }
@@ -61,7 +61,7 @@
     document.getElementById('count').textContent = `${j.entries.length} open`;
   }
   await refresh();
-  setInterval(refresh, {{ config('csem.poll_seconds') }} * 1000);
+  setInterval(refresh, {{ config('hrwt.poll_seconds', 15) }} * 1000);
   const focus = new URLSearchParams(location.search);
   if (focus.get('e')) cm.focus(+focus.get('e'), +focus.get('n'), 2);
 })();

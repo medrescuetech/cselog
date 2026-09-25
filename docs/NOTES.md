@@ -45,14 +45,13 @@ against those three.
 
 ## Naming
 
-Working title **CSEM** (Confined Space Entry Monitor). The system isn't confined-space-specific
-(the work type list is customisable), so something like *SiteLog* / *OpenWork* might age better.
-Cheap to change now, annoying later — worth five minutes of thought before Phase 0.
+Named **HRWT** (High Risk Work Tracker). The system isn't confined-space-specific
+(the work type list is customisable and covers Working at Heights, Hot Work, etc.).
 
 ## Next actions
 
 1. GMC answers the top of `07-open-questions.md` (map data, volume, hosting specifics).
-2. ~~Send whatever map image exists~~ **Done** — SCJV site map PDF and the PR25 ArcGIS Online
+2. ~~Send whatever map image exists~~ **Done** — site map PDF and the PR25 ArcGIS Online
    web map received (`10-site-map-sources.md`). Remaining: confirm anonymous access to the
    ArcGIS tile/feature services.
 3. Confirm the stack (or push back on it) and the phase order.
