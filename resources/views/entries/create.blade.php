@@ -11,9 +11,10 @@
   @csrf
   <div class="flex items-baseline justify-between">
     <h1 class="text-2xl font-bold">Log high risk work</h1>
-    <button type="button" @click="late = !late" class="font-mono text-2xl text-slate-300 hover:text-white" title="Tap to log a late entry">
-      <span x-text="clock"></span> <span class="text-sm text-slate-500" x-show="!late">now</span>
-    </button>
+    <div class="text-right">
+      <div class="font-mono text-2xl text-slate-300"><span x-text="clock"></span></div>
+      <div class="text-[11px] text-slate-500">Australia/Perth</div>
+    </div>
   </div>
 
   @if ($errors->any())
@@ -22,8 +23,28 @@
     </div>
   @endif
 
+  <div class="grid grid-cols-2 gap-2">
+    <button type="button" @click="planned = !planned; if (planned) late = false"
+            :class="planned ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'"
+            class="rounded-lg border px-3 py-3 text-sm font-semibold">
+      Schedule in advance
+    </button>
+    <button type="button" @click="late = !late; if (late) planned = false"
+            :class="late ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'"
+            class="rounded-lg border px-3 py-3 text-sm font-semibold">
+      Log a late start
+    </button>
+  </div>
+
+  <div x-show="planned" x-cloak class="bg-amber-950/35 border border-amber-800 rounded-lg p-3 space-y-2">
+    <label class="block text-sm text-slate-300">Planned start — Australia/Perth
+      <input type="datetime-local" name="planned_start_at" x-model="plannedStart" :disabled="!planned" required
+             class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
+    <p class="text-xs text-slate-500">This job will be created as Pending, appear in the Pending list immediately, and appear on the Open Board on its planned Perth calendar day. Press Start when work actually begins.</p>
+  </div>
+
   <div x-show="late" x-cloak class="bg-slate-800 rounded-lg p-3 space-y-2">
-    <label class="block text-sm text-slate-300">Logged late — actual time was
+    <label class="block text-sm text-slate-300">Logged late — actual start time (Australia/Perth)
       <input type="datetime-local" name="opened_at" x-model="openedAt" :disabled="!late" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
     <input name="late_reason" placeholder="Reason (e.g. radio traffic)" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
   </div>
@@ -128,11 +149,23 @@ function logForm(types) {
     types,
     workTypeId: {{ (int) old('work_type_id', $defaultType?->id ?? 0) }},
     selectedType() { return this.types.find(t => Number(t.id) === Number(this.workTypeId)) || null; },
-    clock: '', late: false, openedAt: '',
+    clock: '', late: false, planned: false, openedAt: '', plannedStart: '',
     q: '', results: [], picked: null, adhoc: {},
     pinOpen: false, pin: { e: null, n: null, name: '', area: null, nearby: [], error: '' }, mapObj: null, marker: null,
     init() {
-      const tick = () => { const d = new Date(); this.clock = d.toTimeString().slice(0, 5); if (!this.late) this.openedAt = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); };
+      const fmtPerth = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Perth', hour: '2-digit', minute: '2-digit', hour12: false });
+      const perthLocalValue = d => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Australia/Perth', year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).formatToParts(d).reduce((a, p) => (a[p.type] = p.value, a), {});
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+      };
+      const tick = () => {
+        const d = new Date();
+        this.clock = fmtPerth.format(d);
+        if (!this.late) this.openedAt = perthLocalValue(d);
+      };
       tick(); setInterval(tick, 1000);
       this.search();
     },
