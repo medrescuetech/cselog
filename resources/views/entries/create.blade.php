@@ -3,7 +3,7 @@
 @push('head')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/csem-map.js"></script>
+<script src="/js/hwrt-map.js"></script>
 @endpush
 
 @section('content')
@@ -141,7 +141,7 @@ function logForm(types) {
       this.pinOpen = true; this.pin = { e: null, n: null, name: this.q, area: null, nearby: [], error: '' };
       await this.$nextTick();
       if (!this.mapObj) {
-        this.mapObj = await CsemMap.create('pinmap', { skipPrints: true });
+        this.mapObj = await HwrtMap.create('pinmap', { skipPrints: true });
         this.mapObj.map.on('click', ev => this.place(this.mapObj.fromLL(ev.latlng)));
       } else { this.mapObj.map.invalidateSize(); }
       if (this.marker) { this.marker.remove(); this.marker = null; }
