@@ -62,11 +62,11 @@ class Entry extends Model
             return 'none';
         }
         $h = $this->elapsedSeconds() / 3600;
-        if ($h >= config('csem.red_hours')) {
+        if ($h >= config('hrwt.red_hours')) {
             return 'red';
         }
 
-        return $h >= config('csem.amber_hours') ? 'amber' : 'none';
+        return $h >= config('hrwt.amber_hours') ? 'amber' : 'none';
     }
 
     public function log(string $event, ?array $changes = null): void

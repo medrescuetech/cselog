@@ -1,4 +1,4 @@
-# CSEM — Confined Space Entry Monitor
+# HRWT — High Risk Work Tracker
 
 A web-based log and live map for tracking open work locations on a site (primarily confined
 space entries) that are called in by radio.
@@ -17,8 +17,8 @@ php artisan sitemap:import                            # areas/landmarks from sit
 php artisan serve                                     # http://localhost:8000
 ```
 
-Default admin is `admin@example.com` / `changeme` — override with `CSEM_ADMIN_EMAIL` /
-`CSEM_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
+Default admin is `admin@example.com` / `changeme` — override with `HRWT_ADMIN_EMAIL` /
+`HRWT_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
 `scripts/smoke.sh` exercises every route against a running dev server.
 
 Stack as built: PHP 8.3 / Laravel 13, Blade + Alpine + Tailwind (CDN for now), Leaflet
@@ -221,7 +221,7 @@ for the full list. The ones that matter most:
 
 1. How many sites, and roughly how many open entries at once / per day?
 2. What map data actually exists — image only, PDF, shapefile/DWG, GeoTIFF, an ArcGIS/QGIS export?
-   **Answered:** SCJV site map PDF + public ArcGIS Online web map (Nearmap tiles, plot plans,
+   **Answered:** site map PDF + public ArcGIS Online web map (Nearmap tiles, plot plans,
    lease boundaries) — see `docs/10-site-map-sources.md`. `docs/09` is now the fallback plan.
 3. Who logs the call: one controller at a desk, or multiple people on phones in the field?
 4. Does this need to feed or replace an existing permit-to-work system?
