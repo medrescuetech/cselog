@@ -22,7 +22,7 @@ from PIL import Image
 
 WEBMAP_ITEM = "201f054f265c44209cc9924de14065f9"
 PORTAL = "https://enveng.maps.arcgis.com/sharing/rest/content/items"
-UA = {"User-Agent": "csem-map-fetch/1.0"}
+UA = {"User-Agent": "hwrt-map-fetch/2.0"}
 
 
 def get_json(url, **params):
