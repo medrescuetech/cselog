@@ -8,7 +8,7 @@
   <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="rounded bg-slate-800 border border-slate-700 px-2 py-2">
   <select name="status" class="rounded bg-slate-800 border border-slate-700 px-2 py-2">
     <option value="">Any status</option>
-    @foreach (['open', 'closed', 'cancelled'] as $s) <option value="{{ $s }}" @selected(($filters['status'] ?? '') === $s)>{{ ucfirst($s) }}</option> @endforeach
+    @foreach (['pending', 'open', 'closed', 'cancelled'] as $s) <option value="{{ $s }}" @selected(($filters['status'] ?? '') === $s)>{{ ucfirst($s) }}</option> @endforeach
   </select>
   <select name="work_type_id" class="rounded bg-slate-800 border border-slate-700 px-2 py-2">
     <option value="">Any type</option>
