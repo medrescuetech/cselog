@@ -36,6 +36,10 @@ return new class extends Migration
             DB::table('users')->where('id', $user->id)->update(['username' => $candidate]);
         }
 
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('email')->nullable()->change();
+        });
+
         Schema::table('work_types', function (Blueprint $table) {
             $table->string('notes_prompt', 255)->nullable()->after('requires_note');
             $table->boolean('is_other')->default(false)->after('notes_prompt');
@@ -73,7 +77,14 @@ return new class extends Migration
             $table->dropColumn(['notes_prompt', 'is_other']);
         });
 
+        foreach (DB::table('users')->whereNull('email')->get(['id', 'username']) as $user) {
+            DB::table('users')->where('id', $user->id)->update([
+                'email' => ($user->username ?: 'user'.$user->id).'@local.invalid',
+            ]);
+        }
+
         Schema::table('users', function (Blueprint $table) {
+            $table->string('email')->nullable(false)->change();
             $table->dropUnique(['username']);
             $table->dropColumn('username');
         });
