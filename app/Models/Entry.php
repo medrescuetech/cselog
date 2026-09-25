@@ -12,7 +12,7 @@ class Entry extends Model
 
     protected $casts = [
         'easting' => 'float', 'northing' => 'float',
-        'opened_at' => 'datetime', 'closed_at' => 'datetime',
+        'planned_start_at' => 'datetime', 'opened_at' => 'datetime', 'closed_at' => 'datetime',
     ];
 
     protected static function booted(): void
