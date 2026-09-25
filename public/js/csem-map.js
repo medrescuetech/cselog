@@ -12,9 +12,18 @@ window.CsemMap = (function () {
 
   function notify(host, type, message, error = null) {
     if (!host) return;
-    host.dispatchEvent(new CustomEvent(`csem:${type}`, {
-      detail: { message, error: error ? String(error.message || error) : null },
-    }));
+    const detail = { message, error: error ? String(error.message || error) : null };
+    host.dispatchEvent(new CustomEvent(`csem:${type}`, { detail }));
+
+    if ((type === 'warning' || type === 'error') && window.csemReportError) {
+      window.csemReportError(`map-${type}`, message, {
+        stack: error?.stack || null,
+        context: {
+          map_element: host.id || null,
+          detail_error: detail.error,
+        },
+      });
+    }
   }
 
   async function fetchJson(url, label = 'Request') {

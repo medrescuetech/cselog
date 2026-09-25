@@ -113,6 +113,9 @@
         document.getElementById('count').textContent = `${j.entries.length} open`;
       } catch (error) {
         console.error('CSEM map: open entries unavailable', error);
+        window.csemReportError?.('map-open-entries', error.message || 'Open entries refresh failed', {
+          stack: error.stack || null,
+        });
         showNotice('Map loaded, but open entries could not be refreshed.', false);
       }
     }
@@ -124,6 +127,9 @@
     if (focus.get('e') && focus.get('n')) cm.focus(+focus.get('e'), +focus.get('n'), 2);
   } catch (error) {
     console.error('CSEM map failed to initialise', error);
+    window.csemReportError?.('map-init', error.message || 'Map failed to initialise', {
+      stack: error.stack || null,
+    });
     mapEl.dataset.csemMapState = 'error';
     showNotice('Map imagery could not be loaded. ' + (error.message || ''), true);
   }

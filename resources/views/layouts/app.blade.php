@@ -18,6 +18,9 @@
     @foreach ($nav as [$r,$label])
       <a href="{{ route($r) }}" class="px-3 py-2 rounded {{ request()->routeIs($r) ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">{{ $label }}</a>
     @endforeach
+    @if (auth()->user()?->atLeast('supervisor'))
+      <a href="{{ route('errors.index') }}" class="px-3 py-2 rounded {{ request()->routeIs('errors.*') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">Errors</a>
+    @endif
     <div class="flex-1"></div>
     @if (auth()->user()?->atLeast('logger'))
       <a href="{{ route('entries.create') }}" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 font-semibold">+ Log entry</a>
@@ -36,6 +39,66 @@
 <script>
   window.csrf = document.querySelector('meta[name=csrf-token]').content;
   window.fmtElapsed = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60); return h ? `${h}:${String(m).padStart(2,'0')}` : `0:${String(m).padStart(2,'0')}`; };
+
+  (() => {
+    const recentlySent = new Map();
+
+    window.csemReportError = (kind, message, details = {}) => {
+      const text = String(message || 'Unknown browser error').slice(0, 4000);
+      const fingerprint = `${kind}|${text}|${location.pathname}`;
+      const now = Date.now();
+      if (recentlySent.has(fingerprint) && now - recentlySent.get(fingerprint) < 30000) return;
+      recentlySent.set(fingerprint, now);
+
+      const context = details.context && typeof details.context === 'object' ? details.context : {};
+      const body = {
+        kind: String(kind || 'browser').slice(0, 80),
+        message: text,
+        stack: details.stack ? String(details.stack).slice(0, 12000) : null,
+        url: location.href,
+        source: details.source ? String(details.source).slice(0, 2000) : null,
+        line: Number.isFinite(Number(details.line)) ? Number(details.line) : null,
+        column: Number.isFinite(Number(details.column)) ? Number(details.column) : null,
+        context,
+      };
+
+      fetch('{{ route('api.client-errors') }}', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': window.csrf,
+        },
+        body: JSON.stringify(body),
+      }).catch(() => {});
+    };
+
+    window.addEventListener('error', event => {
+      const target = event.target;
+      if (target && target !== window && (target.src || target.href)) {
+        window.csemReportError('resource', 'Browser resource failed to load.', {
+          source: target.src || target.href,
+          context: { tag: target.tagName || null },
+        });
+        return;
+      }
+
+      window.csemReportError('javascript', event.message || 'JavaScript error', {
+        stack: event.error?.stack || null,
+        source: event.filename || null,
+        line: event.lineno || null,
+        column: event.colno || null,
+      });
+    }, true);
+
+    window.addEventListener('unhandledrejection', event => {
+      const reason = event.reason;
+      window.csemReportError('promise', reason?.message || String(reason || 'Unhandled promise rejection'), {
+        stack: reason?.stack || null,
+      });
+    });
+  })();
 </script>
 @stack('scripts')
 </body>
