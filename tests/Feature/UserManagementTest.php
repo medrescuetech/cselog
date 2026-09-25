@@ -11,63 +11,64 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_admin_can_access_user_management(): void
+    public function test_only_admin_can_access_user_settings(): void
     {
-        $viewer = User::factory()->create(['role' => 'viewer']);
-        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $user = User::factory()->create(['role' => 'user']);
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->actingAs($viewer)->get('/admin/users')->assertForbidden();
-        $this->actingAs($supervisor)->get('/admin/users')->assertForbidden();
+        $this->actingAs($user)->get('/settings/users')->assertForbidden();
 
         $this->actingAs($admin)
-            ->get('/admin/users')
+            ->get('/settings/users')
             ->assertOk()
-            ->assertSee('User management')
-            ->assertSee($viewer->email);
+            ->assertSee('Settings · Users')
+            ->assertSee($user->username);
     }
 
-    public function test_admin_can_create_user_with_role_and_password(): void
+    public function test_admin_can_create_username_only_user(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->actingAs($admin)->post('/admin/users', [
-            'name' => 'Site Supervisor',
-            'email' => 'supervisor@example.com',
-            'role' => 'supervisor',
+        $this->actingAs($admin)->post('/settings/users', [
+            'name' => 'Control Room',
+            'username' => 'control.room',
+            'email' => '',
+            'role' => 'user',
             'active' => '1',
             'password' => 'StrongPassword123!',
             'password_confirmation' => 'StrongPassword123!',
-        ])->assertRedirect(route('admin.users.index'));
+        ])->assertRedirect(route('settings.users.index'));
 
-        $user = User::where('email', 'supervisor@example.com')->firstOrFail();
-        $this->assertSame('Site Supervisor', $user->name);
-        $this->assertSame('supervisor', $user->role);
+        $user = User::where('username', 'control.room')->firstOrFail();
+        $this->assertSame('Control Room', $user->name);
+        $this->assertNull($user->email);
+        $this->assertSame('user', $user->role);
         $this->assertTrue($user->active);
         $this->assertTrue(Hash::check('StrongPassword123!', $user->password));
     }
 
-    public function test_admin_can_change_role_status_and_password(): void
+    public function test_admin_can_change_status_and_password(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $user = User::factory()->create([
-            'role' => 'logger',
+            'role' => 'user',
             'active' => true,
             'password' => 'OriginalPassword123!',
         ]);
 
-        $this->actingAs($admin)->patch("/admin/users/{$user->id}", [
+        $this->actingAs($admin)->patch("/settings/users/{$user->id}", [
             'name' => 'Updated User',
-            'email' => $user->email,
-            'role' => 'viewer',
+            'username' => 'updated.user',
+            'email' => '',
+            'role' => 'user',
             'active' => '0',
             'password' => 'ReplacementPassword123!',
             'password_confirmation' => 'ReplacementPassword123!',
-        ])->assertRedirect(route('admin.users.index'));
+        ])->assertRedirect(route('settings.users.index'));
 
         $user->refresh();
         $this->assertSame('Updated User', $user->name);
-        $this->assertSame('viewer', $user->role);
+        $this->assertSame('updated.user', $user->username);
         $this->assertFalse($user->active);
         $this->assertTrue(Hash::check('ReplacementPassword123!', $user->password));
     }
@@ -76,10 +77,11 @@ class UserManagementTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin', 'active' => true]);
 
-        $this->actingAs($admin)->patch("/admin/users/{$admin->id}", [
+        $this->actingAs($admin)->patch("/settings/users/{$admin->id}", [
             'name' => $admin->name,
+            'username' => $admin->username,
             'email' => $admin->email,
-            'role' => 'viewer',
+            'role' => 'user',
             'active' => '0',
             'password' => '',
             'password_confirmation' => '',
@@ -95,14 +97,15 @@ class UserManagementTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'active' => true]);
         $other = User::factory()->create(['role' => 'admin', 'active' => true]);
 
-        $this->actingAs($admin)->patch("/admin/users/{$other->id}", [
+        $this->actingAs($admin)->patch("/settings/users/{$other->id}", [
             'name' => $other->name,
+            'username' => $other->username,
             'email' => $other->email,
             'role' => 'admin',
             'active' => '0',
             'password' => '',
             'password_confirmation' => '',
-        ])->assertRedirect(route('admin.users.index'));
+        ])->assertRedirect(route('settings.users.index'));
 
         $this->assertFalse($other->fresh()->active);
         $this->assertTrue($admin->fresh()->active);
