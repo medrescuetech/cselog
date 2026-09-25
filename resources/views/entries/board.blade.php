@@ -14,6 +14,7 @@
     <table class="w-full min-w-[1120px] border-collapse text-sm">
       <thead class="bg-slate-950 text-slate-300 text-xs uppercase tracking-wide">
         <tr>
+          <th scope="col" class="px-3 py-3 text-left w-28">HRW ID</th>
           <th scope="col" class="px-3 py-3 text-left w-24">Elapsed</th>
           <th scope="col" class="px-3 py-3 text-left w-40">Type</th>
           <th scope="col" class="px-3 py-3 text-left min-w-[14rem]">Location</th>
@@ -22,14 +23,12 @@
           <th scope="col" class="px-3 py-3 text-left min-w-[15rem]">Notes / Reported by</th>
           <th scope="col" class="px-3 py-3 text-left w-24">Opened</th>
           <th scope="col" class="px-3 py-3 text-left w-36">Opened by</th>
-          @if (auth()->user()->atLeast('logger'))
-            <th scope="col" class="px-3 py-3 text-right w-24">Action</th>
-          @endif
+          <th scope="col" class="px-3 py-3 text-right w-24">Action</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-700/80">
         <tr x-show="!entries.length">
-          <td colspan="{{ auth()->user()->atLeast('logger') ? 9 : 8 }}" class="px-3 py-10 text-center text-slate-400 text-lg">
+          <td colspan="10" class="px-3 py-10 text-center text-slate-400 text-lg">
             Nothing open.
           </td>
         </tr>
@@ -42,6 +41,7 @@
               'bg-slate-800/50': e.band === 'none',
               'ring-2 ring-inset ring-emerald-400': e.id === highlight
             }">
+            <td class="px-3 py-3 align-top font-mono font-semibold whitespace-nowrap" x-text="e.hrw_ref"></td>
             <td class="px-3 py-3 align-top">
               <div class="font-mono text-xl whitespace-nowrap"
                    :class="e.band === 'red' ? 'animate-pulse text-red-100' : ''"
@@ -50,7 +50,7 @@
             <td class="px-3 py-3 align-top">
               <div class="flex items-center gap-2">
                 <span class="inline-block w-3 h-3 rounded-full shrink-0" :style="`background:${e.colour}`"></span>
-                <span class="font-medium" x-text="e.type"></span>
+                <span class="font-medium" x-text="e.type_display || e.type"></span>
               </div>
             </td>
             <td class="px-3 py-3 align-top">
@@ -67,14 +67,12 @@
             <td class="px-3 py-3 align-top text-slate-300 whitespace-nowrap"
                 x-text="new Date(e.opened_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})"></td>
             <td class="px-3 py-3 align-top text-slate-300" x-text="e.opened_by || '—'"></td>
-            @if (auth()->user()->atLeast('logger'))
-              <td class="px-3 py-3 align-top text-right">
-                <button @click="closing = e"
-                        class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-emerald-600 font-semibold">
-                  Close
-                </button>
-              </td>
-            @endif
+            <td class="px-3 py-3 align-top text-right">
+              <button @click="closing = e"
+                      class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-emerald-600 font-semibold">
+                Close
+              </button>
+            </td>
           </tr>
         </template>
       </tbody>
@@ -104,7 +102,7 @@ function board() {
     now: Date.now(), last: Date.now(), ago: 'just now', closing: null, highlight: {{ (int) session('highlight', 0) }},
     init() {
       setInterval(() => { this.now = Date.now(); this.ago = Math.round((this.now - this.last) / 1000) + 's ago'; }, 1000);
-      setInterval(() => this.refresh(), {{ config('csem.poll_seconds') }} * 1000);
+      setInterval(() => this.refresh(), {{ config('hwrt.poll_seconds') }} * 1000);
       setTimeout(() => this.highlight = 0, 6000);
     },
     async refresh() {
@@ -116,7 +114,7 @@ function board() {
         this.last = Date.now();
       } catch (error) {
         console.error('CSEM board refresh failed', error);
-        window.csemReportError?.('board-refresh', error.message || 'Open board refresh failed', { stack: error.stack || null });
+        window.hwrtReportError?.('board-refresh', error.message || 'Open board refresh failed', { stack: error.stack || null });
       }
     },
   };
