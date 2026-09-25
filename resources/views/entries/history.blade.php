@@ -28,12 +28,12 @@
 <div class="overflow-x-auto rounded-lg border border-slate-800">
 <table class="w-full text-sm">
   <thead class="bg-slate-800 text-slate-300 text-left">
-    <tr><th class="p-2">Opened</th><th class="p-2">Closed</th><th class="p-2">Duration</th><th class="p-2">Location</th><th class="p-2">Type</th><th class="p-2">Area</th><th class="p-2">Notes</th><th class="p-2">Logged by</th><th class="p-2">Closed by</th></tr>
+    <tr><th class="p-2">HRW ID</th><th class="p-2">Opened</th><th class="p-2">Closed</th><th class="p-2">Duration</th><th class="p-2">Location</th><th class="p-2">Type</th><th class="p-2">Area</th><th class="p-2">Notes</th><th class="p-2">Logged by</th><th class="p-2">Closed by</th></tr>
   </thead>
   <tbody>
   @forelse ($entries as $e)
     <tr class="border-t border-slate-800 hover:bg-slate-800/60 align-top" x-data="{ open: false }" @click="open = !open">
-      <td class="p-2 whitespace-nowrap">{{ $e->opened_at->format('d M H:i') }}</td>
+      <td class="p-2 font-mono font-semibold whitespace-nowrap">{{ $e->hrw_ref }}</td><td class="p-2 whitespace-nowrap">{{ $e->opened_at->format('d M H:i') }}</td>
       <td class="p-2 whitespace-nowrap">{{ $e->closed_at?->format('d M H:i') ?? '—' }}</td>
       <td class="p-2 font-mono">{{ $e->status === 'open' ? 'open' : gmdate('G:i', $e->elapsedSeconds()) }}</td>
       <td class="p-2 font-medium">{{ $e->location_label }}@if (! $e->location_id) <span class="text-[10px] uppercase text-slate-400">ad-hoc</span>@endif
@@ -43,14 +43,14 @@
             <div>{{ $ev->occurred_at->format('d M H:i:s') }} — {{ $ev->event }} by {{ $ev->actor?->name ?? '—' }}@if ($ev->changes) <span class="text-slate-500">{{ json_encode($ev->changes) }}</span>@endif</div>
           @endforeach
         </div></td>
-      <td class="p-2"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background: {{ $e->workType->colour }}"></span>{{ $e->workType->name }}</td>
+      <td class="p-2"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background: {{ $e->workType->colour }}"></span>{{ $e->workType->is_other && $e->other_description ? 'Other — '.$e->other_description : $e->workType->name }}</td>
       <td class="p-2">{{ $e->area?->name ?? '—' }}</td>
       <td class="p-2 text-slate-300">{{ $e->notes }}@if ($e->close_note) <div class="text-slate-500">close: {{ $e->close_note }}</div>@endif</td>
       <td class="p-2 whitespace-nowrap">{{ $e->opener?->name }}</td>
       <td class="p-2 whitespace-nowrap">{{ $e->closer?->name ?? '—' }}</td>
     </tr>
   @empty
-    <tr><td colspan="9" class="p-6 text-center text-slate-400">No entries match.</td></tr>
+    <tr><td colspan="10" class="p-6 text-center text-slate-400">No entries match.</td></tr>
   @endforelse
   </tbody>
 </table>
