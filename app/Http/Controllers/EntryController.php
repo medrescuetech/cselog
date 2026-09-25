@@ -17,6 +17,7 @@ class EntryController extends Controller
         return view('entries.create', [
             'workTypes' => WorkType::active()->get(),
             'defaultType' => WorkType::active()->where('is_default', true)->first() ?? WorkType::active()->first(),
+            'timezone' => config('app.timezone'),
         ]);
     }
 
@@ -34,6 +35,7 @@ class EntryController extends Controller
             'reported_by' => 'nullable|string|max:120',
             'opened_at' => 'nullable|date',
             'late_reason' => 'nullable|string|max:255',
+            'planned_start_at' => 'nullable|date',
         ]);
 
         $type = WorkType::findOrFail($d['work_type_id']);
@@ -48,14 +50,34 @@ class EntryController extends Controller
         $e = $location?->easting ?? (float) $d['easting'];
         $n = $location?->northing ?? (float) $d['northing'];
 
-        $openedAt = now();
-        $changes = null;
-        if (! empty($d['opened_at'])) {
+        $now = Carbon::now(config('app.timezone'));
+        $planned = null;
+        if (! empty($d['planned_start_at'])) {
+            $planned = Carbon::parse($d['planned_start_at'], config('app.timezone'));
+            if ($planned->lte($now)) {
+                return back()->withErrors([
+                    'planned_start_at' => 'A planned start must be in the future (Australia/Perth time).',
+                ])->withInput();
+            }
+        }
+
+        $status = $planned ? 'pending' : 'open';
+        $openedAt = $planned ?: $now;
+        $changes = $planned
+            ? ['scheduled' => true, 'planned_start_at' => $planned->toIso8601String(), 'timezone' => config('app.timezone')]
+            : null;
+
+        if (! $planned && ! empty($d['opened_at'])) {
             $openedAt = Carbon::parse($d['opened_at'], config('app.timezone'));
             if ($openedAt->isFuture()) {
                 return back()->withErrors(['opened_at' => 'Time cannot be in the future.'])->withInput();
             }
-            $changes = ['logged_late' => true, 'reason' => $d['late_reason'] ?? null, 'recorded_at' => now()->toIso8601String()];
+            $changes = [
+                'logged_late' => true,
+                'reason' => $d['late_reason'] ?? null,
+                'recorded_at' => $now->toIso8601String(),
+                'timezone' => config('app.timezone'),
+            ];
         }
 
         $entry = Entry::create([
@@ -69,22 +91,66 @@ class EntryController extends Controller
             'notes' => $d['notes'] ?? null,
             'permit_no' => $d['permit_no'] ?? null,
             'reported_by' => $d['reported_by'] ?? null,
-            'status' => 'open',
+            'status' => $status,
+            'planned_start_at' => $planned,
+            'scheduled_by' => $planned ? $request->user()->id : null,
+            // Existing V1 columns are non-null. Pending records use the planned value provisionally;
+            // Start replaces these with the actual time/user and preserves planned_start_at.
             'opened_at' => $openedAt,
             'opened_by' => $request->user()->id,
         ]);
-        $entry->log('created', $changes);
+        $entry->log($planned ? 'scheduled' : 'created', $changes);
 
         if ($location) {
             $location->increment('usage_count');
-            $location->forceFill(['last_used_at' => now()])->save();
+            $location->forceFill(['last_used_at' => $now])->save();
         }
 
         if ($request->expectsJson()) {
             return response()->json($entry, 201);
         }
 
-        return redirect()->route('board')->with('highlight', $entry->id);
+        return redirect()
+            ->route($planned ? 'pending' : 'board')
+            ->with('highlight', $entry->id)
+            ->with('status', $planned ? "Scheduled {$entry->hrw_ref}." : "Opened {$entry->hrw_ref}.");
+    }
+
+    public function start(Request $request, Entry $entry)
+    {
+        abort_unless($entry->status === 'pending', 409, 'Only pending work can be started.');
+
+        $actual = Carbon::now(config('app.timezone'));
+        $entry->update([
+            'status' => 'open',
+            'opened_at' => $actual,
+            'opened_by' => $request->user()->id,
+        ]);
+        $entry->log('started', [
+            'planned_start_at' => $entry->planned_start_at?->toIso8601String(),
+            'actual_start_at' => $actual->toIso8601String(),
+            'timezone' => config('app.timezone'),
+        ]);
+
+        return redirect()->route('board')
+            ->with('highlight', $entry->id)
+            ->with('status', "Started {$entry->hrw_ref}.");
+    }
+
+    public function cancel(Request $request, Entry $entry)
+    {
+        abort_unless($entry->status === 'pending', 409, 'Only pending work can be cancelled here.');
+        $d = $request->validate(['cancel_note' => 'nullable|string|max:2000']);
+
+        $entry->update([
+            'status' => 'cancelled',
+            'closed_at' => Carbon::now(config('app.timezone')),
+            'closed_by' => $request->user()->id,
+            'close_note' => $d['cancel_note'] ?? null,
+        ]);
+        $entry->log('cancelled', ['note' => $d['cancel_note'] ?? null]);
+
+        return back()->with('status', "Cancelled {$entry->hrw_ref}.");
     }
 
     public function close(Request $request, Entry $entry)
@@ -93,7 +159,7 @@ class EntryController extends Controller
         $d = $request->validate(['close_note' => 'nullable|string|max:2000']);
         $entry->update([
             'status' => 'closed',
-            'closed_at' => now(),
+            'closed_at' => Carbon::now(config('app.timezone')),
             'closed_by' => $request->user()->id,
             'close_note' => $d['close_note'] ?? null,
         ]);
@@ -103,21 +169,39 @@ class EntryController extends Controller
             return response()->json($entry);
         }
 
-        return back()->with('status', "Closed {$entry->location_label}.");
+        return back()->with('status', "Closed {$entry->hrw_ref}.");
     }
 
     public function board()
     {
         return view('entries.board', [
             'entries' => $this->openEntries()->map(fn ($e) => $this->serialise($e))->values(),
+            'pendingToday' => $this->pendingToday()->map(fn ($e) => $this->serialise($e))->values(),
+            'timezone' => config('app.timezone'),
+        ]);
+    }
+
+    public function pending()
+    {
+        $entries = Entry::query()
+            ->where('status', 'pending')
+            ->with(['workType', 'area', 'opener', 'location'])
+            ->orderBy('planned_start_at')
+            ->paginate(100);
+
+        return view('entries.pending', [
+            'entries' => $entries,
+            'timezone' => config('app.timezone'),
         ]);
     }
 
     public function openJson()
     {
         return response()->json([
-            'server_time' => now()->toIso8601String(),
+            'server_time' => Carbon::now(config('app.timezone'))->toIso8601String(),
+            'timezone' => config('app.timezone'),
             'entries' => $this->openEntries()->map(fn ($e) => $this->serialise($e)),
+            'pending_today' => $this->pendingToday()->map(fn ($e) => $this->serialise($e)),
         ]);
     }
 
@@ -125,7 +209,7 @@ class EntryController extends Controller
     {
         $f = $request->validate([
             'from' => 'nullable|date', 'to' => 'nullable|date',
-            'status' => 'nullable|in:open,closed,cancelled',
+            'status' => 'nullable|in:pending,open,closed,cancelled',
             'work_type_id' => 'nullable|integer', 'area_id' => 'nullable|integer',
             'q' => 'nullable|string|max:120',
         ]);
@@ -142,19 +226,23 @@ class EntryController extends Controller
     {
         $f = $request->only(['from', 'to', 'status', 'work_type_id', 'area_id', 'q']);
         $q = $this->historyQuery($f);
-        $name = 'hwrt-history-'.now()->format('Ymd-Hi').'.csv';
+        $name = 'hwrt-history-'.Carbon::now(config('app.timezone'))->format('Ymd-Hi').'.csv';
 
         return response()->streamDownload(function () use ($q) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['hrw_id', 'id', 'opened_at', 'closed_at', 'duration_min', 'status', 'location', 'easting', 'northing',
-                'area', 'work_type', 'other_type', 'permit_no', 'reported_by', 'notes', 'opened_by', 'closed_by', 'close_note']);
+            fputcsv($out, [
+                'hrw_id', 'id', 'planned_start_at', 'opened_at', 'closed_at', 'duration_min',
+                'status', 'location', 'easting', 'northing', 'area', 'work_type', 'other_type',
+                'permit_no', 'reported_by', 'notes', 'opened_by', 'closed_by', 'close_note',
+            ]);
             $q->chunk(500, function ($rows) use ($out) {
                 foreach ($rows as $e) {
                     fputcsv($out, [
-                        $e->hrw_ref, $e->id, $e->opened_at, $e->closed_at,
-                        $e->closed_at ? round($e->elapsedSeconds() / 60) : null,
+                        $e->hrw_ref, $e->id, $e->planned_start_at, $e->opened_at, $e->closed_at,
+                        ($e->status === 'closed' && $e->closed_at) ? round($e->elapsedSeconds() / 60) : null,
                         $e->status, $e->location_label, $e->easting, $e->northing,
-                        $e->area?->name, $e->workType?->name, $e->other_description, $e->permit_no, $e->reported_by, $e->notes,
+                        $e->area?->name, $e->workType?->name, $e->other_description,
+                        $e->permit_no, $e->reported_by, $e->notes,
                         $e->opener?->name, $e->closer?->name, $e->close_note,
                     ]);
                 }
@@ -165,14 +253,33 @@ class EntryController extends Controller
 
     private function openEntries()
     {
-        return Entry::open()->with(['workType', 'area', 'opener'])->get();
+        return Entry::open()->with(['workType', 'area', 'opener', 'location'])->get();
+    }
+
+    private function pendingToday()
+    {
+        $start = Carbon::now(config('app.timezone'))->startOfDay();
+        $end = $start->copy()->endOfDay();
+
+        return Entry::query()
+            ->where('status', 'pending')
+            ->whereBetween('planned_start_at', [$start, $end])
+            ->with(['workType', 'area', 'opener', 'location'])
+            ->orderBy('planned_start_at')
+            ->get();
     }
 
     private function historyQuery(array $f)
     {
-        return Entry::query()->with(['workType', 'area', 'opener', 'closer'])
-            ->when($f['from'] ?? null, fn ($q, $v) => $q->where('opened_at', '>=', Carbon::parse($v)->startOfDay()))
-            ->when($f['to'] ?? null, fn ($q, $v) => $q->where('opened_at', '<=', Carbon::parse($v)->endOfDay()))
+        return Entry::query()->with(['workType', 'area', 'opener', 'closer', 'location'])
+            ->when($f['from'] ?? null, fn ($q, $v) => $q->where(function ($w) use ($v) {
+                $at = Carbon::parse($v, config('app.timezone'))->startOfDay();
+                $w->where('planned_start_at', '>=', $at)->orWhere('opened_at', '>=', $at);
+            }))
+            ->when($f['to'] ?? null, fn ($q, $v) => $q->where(function ($w) use ($v) {
+                $at = Carbon::parse($v, config('app.timezone'))->endOfDay();
+                $w->where('planned_start_at', '<=', $at)->orWhere('opened_at', '<=', $at);
+            }))
             ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($f['work_type_id'] ?? null, fn ($q, $v) => $q->where('work_type_id', $v))
             ->when($f['area_id'] ?? null, fn ($q, $v) => $q->where('area_id', $v))
@@ -183,7 +290,7 @@ class EntryController extends Controller
                 ->orWhere('other_description', 'like', "%{$v}%")
                 ->orWhere('permit_no', 'like', "%{$v}%")
                 ->orWhere('reported_by', 'like', "%{$v}%")))
-            ->orderByDesc('opened_at');
+            ->orderByDesc('created_at');
     }
 
     private function serialise(Entry $e): array
@@ -191,9 +298,15 @@ class EntryController extends Controller
         return [
             'id' => $e->id,
             'hrw_ref' => $e->hrw_ref,
+            'status' => $e->status,
             'location' => $e->location_label,
             'location_id' => $e->location_id,
-            'easting' => $e->easting, 'northing' => $e->northing,
+            'location_document_url' => $e->location?->document_path
+                ? route('locations.document', $e->location)
+                : null,
+            'location_document_name' => $e->location?->document_name,
+            'easting' => $e->easting,
+            'northing' => $e->northing,
             'area' => $e->area?->name,
             'type' => $e->workType->name,
             'type_display' => $e->workType->is_other && $e->other_description
@@ -201,11 +314,14 @@ class EntryController extends Controller
                 : $e->workType->name,
             'other_description' => $e->other_description,
             'colour' => $e->workType->colour,
-            'notes' => $e->notes, 'permit_no' => $e->permit_no, 'reported_by' => $e->reported_by,
-            'opened_at' => $e->opened_at->toIso8601String(),
+            'notes' => $e->notes,
+            'permit_no' => $e->permit_no,
+            'reported_by' => $e->reported_by,
+            'planned_start_at' => $e->planned_start_at?->toIso8601String(),
+            'opened_at' => $e->opened_at?->toIso8601String(),
             'opened_by' => $e->opener?->name,
-            'elapsed_s' => $e->elapsedSeconds(),
-            'band' => $e->ageBand(),
+            'elapsed_s' => $e->status === 'open' ? $e->elapsedSeconds() : 0,
+            'band' => $e->status === 'open' ? $e->ageBand() : 'none',
         ];
     }
 }
