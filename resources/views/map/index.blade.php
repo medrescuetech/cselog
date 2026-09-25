@@ -2,8 +2,8 @@
 @section('title', 'Map')
 @section('main-class', 'relative')
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+<script src="/vendor/leaflet/leaflet.js"></script>
 <script src="/js/csem-map.js"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }
@@ -26,7 +26,8 @@
 @push('scripts')
 <script>
 (async () => {
-  const cm = await CsemMap.create('map', { collapsed: false });
+  const manifest = @json($manifest);
+  const cm = await CsemMap.create('map', { collapsed: false, manifest });
   const { map, pins, toLL, fromLL } = cm;
   document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
   map.on('mousemove', e => { const { e: E, n: N } = fromLL(e.latlng); document.getElementById('coords').textContent = `E ${E.toFixed(1)}  N ${N.toFixed(1)}  MGA50`; });
@@ -47,7 +48,11 @@
     return el;
   }
   async function refresh() {
-    const j = await fetch('/api/open', { headers: { Accept: 'application/json' } }).then(r => r.json());
+    let j = { entries: [] };
+    try {
+      const res = await fetch('/api/open', { headers: { Accept: 'application/json' } });
+      if (res.ok) j = await res.json();
+    } catch (e) { console.warn('Could not refresh open entries:', e); }
     const seen = new Set();
     for (const en of j.entries) {
       seen.add(en.id);
