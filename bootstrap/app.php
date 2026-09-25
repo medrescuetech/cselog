@@ -45,6 +45,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Console/bootstrap exception: request context may not exist.
             }
 
-            Log::channel('csem_errors')->error($e->getMessage(), $context);
+            Log::channel('hwrt_errors')->error($e->getMessage(), $context);
         });
     })->create();
