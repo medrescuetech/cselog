@@ -55,9 +55,12 @@ class RefreshHwrtMap extends Command
 
             $l17 = $tmp.'/site-cf_L17.jpg';
             $l16 = $tmp.'/site-cf_L16.jpg';
+            $bbox = $this->currentSiteCfBbox($root);
 
-            $this->run([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '17', '--out', $l17]);
-            $this->run([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '16', '--out', $l16]);
+            $this->info("Refresh footprint: {$bbox} (same Site C/F extent as current package)");
+
+            $this->run([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '17', '--bbox', $bbox, '--out', $l17]);
+            $this->run([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '16', '--bbox', $bbox, '--out', $l16]);
 
             $featureSources = [
                 'project-boundaries-infrastructure.geojson' => Setting::value(
@@ -182,6 +185,24 @@ class RefreshHwrtMap extends Command
             'monthly' => $last->lte(now()->subMonth()),
             default => false,
         };
+    }
+
+    private function currentSiteCfBbox(string $root): string
+    {
+        $sidecar = $root.'/imagery/site-cf-2026-09-14_L17_0.25m.json';
+        if (! is_file($sidecar)) {
+            throw new \RuntimeException('Current Site C/F imagery sidecar is missing; refusing to change map coverage.');
+        }
+
+        $json = json_decode((string) file_get_contents($sidecar), true);
+        $e = $json['extent_mga50'] ?? null;
+        foreach (['xmin', 'ymin', 'xmax', 'ymax'] as $key) {
+            if (! isset($e[$key]) || ! is_numeric($e[$key])) {
+                throw new \RuntimeException('Current Site C/F extent is invalid; refusing map refresh.');
+            }
+        }
+
+        return implode(',', [$e['xmin'], $e['ymin'], $e['xmax'], $e['ymax']]);
     }
 
     private function run(array $command): void
