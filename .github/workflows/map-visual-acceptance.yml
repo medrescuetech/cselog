@@ -11,6 +11,83 @@ permissions:
   contents: read
 
 jobs:
+  database-portability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - driver: mysql
+            image: mysql:8.4
+          - driver: mariadb
+            image: mariadb:11.4
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: hwrt
+          MYSQL_USER: hwrt
+          MYSQL_PASSWORD: hwrt-test-password
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: hwrt
+          MARIADB_USER: hwrt
+          MARIADB_PASSWORD: hwrt-test-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_mysql
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Configure MySQL-compatible application database
+        run: |
+          cp .env.example .env
+          sed -i "s/^APP_ENV=.*/APP_ENV=testing/; s/^DB_CONNECTION=.*/DB_CONNECTION=${{ matrix.driver }}/" .env
+          {
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=hwrt"
+            echo "DB_USERNAME=hwrt"
+            echo "DB_PASSWORD=hwrt-test-password"
+            echo "SESSION_DRIVER=database"
+            echo "CACHE_STORE=database"
+            echo "QUEUE_CONNECTION=database"
+          } >> .env
+          php artisan key:generate
+          php artisan migrate --path=database/migrations/0001_01_01_000000_create_users_table.php --force
+          php artisan migrate --path=database/migrations/0001_01_01_000001_create_cache_table.php --force
+          php artisan migrate --path=database/migrations/0001_01_01_000002_create_jobs_table.php --force
+          php artisan migrate --path=database/migrations/2026_09_21_000001_create_csem_tables.php --force
+          php tests/Support/migration-upgrade-rehearsal.php prepare
+          php artisan migrate --force
+          php artisan hwrt:bootstrap-admin
+          php tests/Support/migration-upgrade-rehearsal.php verify
+          mkdir -p storage/app/hwrt-sitemap/versions/ci
+          cp -a sitemap/. storage/app/hwrt-sitemap/versions/ci/
+          ln -s versions/ci storage/app/hwrt-sitemap/current
+          echo "HWRT_SITEMAP_PATH=$GITHUB_WORKSPACE/storage/app/hwrt-sitemap/current" >> .env
+          php artisan sitemap:import
+
+      - name: Run feature and unit tests on ${{ matrix.driver }}
+        run: php artisan test
+
   map-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 20
