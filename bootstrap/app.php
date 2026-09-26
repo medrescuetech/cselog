@@ -49,6 +49,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Console/bootstrap exception: request context may not exist.
             }
 
-            Log::channel('hwrt_errors')->error($e->getMessage(), $context);
+            try {
+                Log::channel('hwrt_errors')->error($e->getMessage(), $context);
+            } catch (\Throwable $loggingError) {
+                error_log(sprintf(
+                    'HWRT exception logger unavailable (%s); original exception: %s in %s:%d',
+                    $loggingError->getMessage(),
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine(),
+                ));
+            }
         });
     })->create();
