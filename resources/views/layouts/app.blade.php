@@ -47,17 +47,14 @@ html[data-theme="light"] .leaflet-popup-tip{background:#fff!important;color:#0f1
   <div class="max-w-7xl mx-auto px-3 min-h-14 flex flex-wrap items-center gap-1 text-sm py-1">
     <a href="{{ route('board') }}" class="font-bold text-lg tracking-tight mr-2" title="High Risk Work Tracker">HWRT</a>
 
-    @php
-      $nav = [
+    @foreach ([
         ['board', 'Open board'],
         ['map', 'Map'],
         ['entries.create', 'Log work'],
         ['pending', 'Pending'],
         ['logbook', 'Logbook'],
         ['reports.index', 'Reports'],
-      ];
-    @endphp
-    @foreach ($nav as [$r,$label])
+      ] as [$r, $label])
       <a href="{{ route($r) }}" class="px-3 py-2 rounded {{ request()->routeIs($r) ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800' }}">{{ $label }}</a>
     @endforeach
 
