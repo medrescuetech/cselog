@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'HWRT') · High Risk Work Tracker</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
+<script defer src="{{ asset('vendor/alpinejs/alpine.min.js') }}"></script>
 @stack('head')
 <style>
 [x-cloak]{display:none!important}

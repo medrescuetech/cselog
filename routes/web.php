@@ -17,8 +17,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [AuthController::class, 'show'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+Route::get('/password/change', [AuthController::class, 'showPasswordChange'])->name('password.change')->middleware('auth');
+Route::post('/password/change', [AuthController::class, 'changePassword'])->name('password.change.store')->middleware('auth');
 
-Route::middleware(['auth', 'role:user'])->group(function () {
+Route::middleware(['auth', 'password.changed', 'role:user'])->group(function () {
     Route::get('/', fn () => redirect()->route('board'));
     Route::get('/board', [EntryController::class, 'board'])->name('board');
     Route::get('/map', [MapController::class, 'index'])->name('map');
@@ -50,7 +52,7 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     Route::post('/api/client-errors', [ErrorLogController::class, 'client'])->name('api.client-errors');
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/appearance', [SettingsController::class, 'appearance'])->name('settings.appearance');
 

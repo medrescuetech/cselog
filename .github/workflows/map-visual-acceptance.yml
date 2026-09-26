@@ -29,10 +29,24 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build local frontend assets
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
       - name: Configure application
         run: |
           cp .env.example .env
           touch database/database.sqlite
+          mkdir -p storage/app/hwrt-sitemap/versions/ci
+          cp -a sitemap/. storage/app/hwrt-sitemap/versions/ci/
+          ln -s versions/ci storage/app/hwrt-sitemap/current
+          echo "HWRT_SITEMAP_PATH=$GITHUB_WORKSPACE/storage/app/hwrt-sitemap/current" >> .env
           php artisan key:generate
           php artisan migrate:fresh --seed
           php artisan sitemap:import
@@ -40,14 +54,8 @@ jobs:
       - name: Run PHPUnit
         run: php artisan test
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - name: Install browser test dependencies
         run: |
-          npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
 
       - name: Start Laravel test server
