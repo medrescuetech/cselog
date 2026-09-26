@@ -71,7 +71,7 @@
               </select>
             @endif
           </div>
-          <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">New password</span>
+          <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Set/reset password</span>
             <input type="password" name="password" minlength="12" autocomplete="new-password" placeholder="Unchanged" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label class="lg:col-span-1 flex items-center gap-2">
             @if ($user->id === auth()->id())
@@ -85,7 +85,7 @@
             <input type="password" name="password_confirmation" minlength="12" autocomplete="new-password" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <div class="lg:col-span-2"><button class="w-full rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2 font-semibold">Save</button></div>
         </div>
-        <div class="mt-2 text-xs text-slate-500">User #{{ $user->id }}@if ($user->id === auth()->id()) · your account @endif @if (!$user->active) · inactive @endif</div>
+        <div class="mt-2 text-xs text-slate-500">User #{{ $user->id }}@if ($user->id === auth()->id()) · your account @endif @if (!$user->active) · inactive @endif · a reset password must be changed at next sign-in</div>
       </form>
     @endforeach
   </section>

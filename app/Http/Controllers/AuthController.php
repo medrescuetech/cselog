@@ -40,7 +40,33 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        if ($user->must_change_password) {
+            return redirect()->route('password.change');
+        }
+
         return redirect()->intended(route('board'));
+    }
+
+    public function showPasswordChange()
+    {
+        return view('auth.password-change');
+    }
+
+    public function changePassword(Request $request)
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
+        ]);
+
+        $request->user()->forceFill([
+            'password' => $data['password'],
+            'must_change_password' => false,
+        ])->save();
+
+        $request->session()->regenerate();
+
+        return redirect()->route('board')->with('status', 'Password updated.');
     }
 
     public function logout(Request $request)

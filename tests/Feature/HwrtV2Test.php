@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\WorkType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -66,6 +67,7 @@ class HwrtV2Test extends TestCase
         $this->assertSame('vessel-a-plan.pdf', $location->document_name);
         Storage::disk('local')->assertExists($location->document_path);
 
+        $this->post('/logout');
         $this->get("/locations/{$location->id}/document")->assertRedirect('/login');
 
         $this->actingAs($user)
@@ -102,5 +104,63 @@ class HwrtV2Test extends TestCase
 
         $this->assertSame('queued', Setting::value('map.last_status'));
         $this->assertNotEmpty(Setting::value('map.refresh_requested_at'));
+    }
+
+    public function test_login_and_map_use_local_frontend_assets(): void
+    {
+        $this->assertFileExists(public_path('css/app.css'));
+        $this->assertFileExists(public_path('vendor/alpinejs/alpine.min.js'));
+        $this->assertFileExists(public_path('vendor/leaflet/leaflet.js'));
+
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee(asset('css/app.css'))
+            ->assertDontSee('cdn.tailwindcss.com')
+            ->assertDontSee('cdn.jsdelivr.net')
+            ->assertDontSee('unpkg.com');
+
+        $user = User::factory()->create(['role' => 'user']);
+        $this->actingAs($user)
+            ->get('/map')
+            ->assertOk()
+            ->assertSee(asset('vendor/leaflet/leaflet.css'))
+            ->assertSee(asset('vendor/leaflet/leaflet.js'))
+            ->assertDontSee('unpkg.com');
+    }
+
+    public function test_sitemap_import_validates_all_sources_before_mutating_database(): void
+    {
+        Storage::fake('local');
+        $path = Storage::disk('local')->path('testing-map-package');
+        $features = $path.DIRECTORY_SEPARATOR.'features';
+        mkdir($features, 0777, true);
+
+        $validArea = [
+            'type' => 'FeatureCollection',
+            'crs_epsg' => 28350,
+            'source' => 'test',
+            'features' => [[
+                'type' => 'Feature',
+                'properties' => ['Name' => 'Test boundary'],
+                'geometry' => [
+                    'type' => 'Polygon',
+                    'coordinates' => [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]],
+                ],
+            ]],
+        ];
+        file_put_contents($features.'/project-development-envelope.geojson', json_encode($validArea));
+        file_put_contents($features.'/lease-boundaries.geojson', json_encode([
+            'type' => 'FeatureCollection',
+            'crs_epsg' => 4326,
+            'features' => [],
+        ]));
+        file_put_contents($features.'/project-boundaries-infrastructure.geojson', json_encode([
+            'type' => 'FeatureCollection',
+            'crs_epsg' => 28350,
+            'features' => [],
+        ]));
+
+        $this->assertSame(1, Artisan::call('sitemap:import', ['--path' => $path]));
+        $this->assertDatabaseCount('areas', 0);
     }
 }

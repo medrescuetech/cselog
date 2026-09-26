@@ -1,13 +1,26 @@
 const { test, expect } = require('@playwright/test');
 
+let adminPassword = process.env.HWRT_ADMIN_PASSWORD || 'admin';
+
 async function login(page) {
   await page.goto('/login');
   await page.getByLabel('Username or email').fill('admin');
-  await page.getByLabel('Password').fill('changeme');
+  await page.getByLabel('Password').fill(adminPassword);
   await Promise.all([
-    page.waitForURL('**/board'),
+    page.waitForURL(url => ['/board', '/password/change'].includes(url.pathname)),
     page.getByRole('button', { name: 'Sign in' }).click(),
   ]);
+
+  if (new URL(page.url()).pathname === '/password/change') {
+    adminPassword = 'HwrtBrowserPass123!';
+    await page.locator('[name="current_password"]').fill(process.env.HWRT_ADMIN_PASSWORD || 'admin');
+    await page.locator('[name="password"]').fill(adminPassword);
+    await page.locator('[name="password_confirmation"]').fill(adminPassword);
+    await Promise.all([
+      page.waitForURL('**/board'),
+      page.getByRole('button', { name: 'Update password' }).click(),
+    ]);
+  }
 }
 
 function localPath(response, path) {

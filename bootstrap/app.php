@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\EnsurePasswordChanged;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,7 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['role' => EnsureRole::class]);
+        $middleware->alias([
+            'role' => EnsureRole::class,
+            'password.changed' => EnsurePasswordChanged::class,
+        ]);
         $middleware->redirectGuestsTo('/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -45,6 +49,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Console/bootstrap exception: request context may not exist.
             }
 
-            Log::channel('hwrt_errors')->error($e->getMessage(), $context);
+            try {
+                Log::channel('hwrt_errors')->error($e->getMessage(), $context);
+            } catch (\Throwable $loggingError) {
+                error_log(sprintf(
+                    'HWRT exception logger unavailable (%s); original exception: %s in %s:%d',
+                    $loggingError->getMessage(),
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine(),
+                ));
+            }
         });
     })->create();

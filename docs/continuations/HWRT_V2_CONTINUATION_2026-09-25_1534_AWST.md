@@ -639,13 +639,17 @@ During V2 work, tests have been updated/added for:
 
 ### Critical status
 
-**The complete V2 branch has not yet completed a clean CI run after all of the latest V2 changes.**
-
-This is the immediate next engineering checkpoint.
+**Status updated 2026-09-26:** the latest complete CI run passed on commit
+`53704fd2801f8ee957098bafadae5c7989b6e601`. The original pending steps below are historical;
+completed work and outstanding gates are recorded in section 24. Do not treat the old CI,
+migration, frontend, map-atomicity or database-decision items below as still open.
 
 ---
 
-## 20. High-priority next steps
+## 20. Original high-priority plan (historical)
+
+The steps in this section captured the plan on 2026-09-25. Their current status is recorded in
+section 24; that status supersedes the instructions below.
 
 ### Step 1 — run a full V2 CI build now
 
@@ -909,33 +913,59 @@ tests/Browser/map.spec.js
 
 ## 23. Resume instruction for the next session
 
-Start from this checkpoint by doing the following in order:
-
-1. Inspect `medrescuetech/cselog` branch `v2/hwrt`.
-2. Read this continuation note and `docs/V2.md`.
-3. Open/trigger the V2 pull request CI.
-4. Fix V2 PHP/test/browser failures until clean.
-5. Consolidate any superseded wording in `docs/V2.md` rather than relying on later addendum sections.
-6. Finish local frontend assets/no-CDN operation.
-7. Harden runtime map package swapping.
-8. Rehearse the V2 migration against a copy of the current cPanel SQLite database.
-9. Upgrade `dev.akgmed.org` using the safe Git update path.
-10. Perform the complete manual acceptance checklist before tagging `v2.0.0`.
+Start with section 24 for the current branch/PR/CI state and remaining work. The original resume
+sequence recorded when this note was created is superseded: CI, local frontend assets, atomic map
+publication, and the production database choice have since been addressed and validated as noted
+below. Do not deploy, merge, or release without the required human approval.
 
 ---
 
 ## 24. Current release assessment
 
-**V2 architecture and most requested features are now represented in the branch, but V2 is not release-ready yet.**
+**Repository-side implementation and CI are complete for this workstream; hosted acceptance and
+release approval remain open.**
 
-The immediate gating items are:
+### Completed and verified
 
-1. clean V2 CI;
-2. clean upgrade migration rehearsal;
-3. no-CDN frontend packaging;
-4. hardened/rollback-safe map refresh;
-5. cPanel V2 dev deployment and manual acceptance;
-6. production database decision;
-7. final `v2.0.0` tag only after those pass.
+- Current branch: `gmednet-hwrt-v2-continuation`, based on `v2/hwrt`.
+- Draft PR: [medrescuetech/cselog#8](https://github.com/medrescuetech/cselog/pull/8), targeting
+  `v2/hwrt`.
+- Current PR head: `53704fd2801f8ee957098bafadae5c7989b6e601`. The local branch was fetched from
+  `origin` and confirmed even with its upstream; the worktree was clean at the time of this update.
+- Latest CI run [36208574649](https://github.com/medrescuetech/cselog/actions/runs/36208574649)
+  passed: MySQL 8.4 migration/feature tests, MariaDB 11.4 migration/feature tests, and SQLite-backed
+  PHPUnit plus Chromium map acceptance.
+- The database portability job rehearses a V1-like upgrade and verifies retention of an existing
+  Admin account, HRW record/reference and `Other` work type, plus creation of the rotatable
+  bootstrap Admin.
+- The CI environment selects `APP_ENV` and `DB_CONNECTION` deterministically. MariaDB readiness
+  uses its native health check.
+- Local frontend assets/build and atomic map-package publication/rollback are implemented. The
+  earlier single-engine CI failure was caused by the MariaDB container health check and is fixed
+  in the passing run.
+- Production database choice is MySQL (`DB_CONNECTION=mysql`), with MariaDB supported and covered
+  by CI. Moving between engines requires a verified logical backup/restore; changing the setting
+  alone does not migrate data. See `docs/V2.md`, section 9.
 
-This document is the continuation checkpoint for work after **2026-09-25 15:34 AWST**.
+### Remaining tasks and release gates
+
+1. **Human PR review and merge:** review PR #8 and merge it into `v2/hwrt` only after approval.
+   Keep it draft until maintainers agree the hosted acceptance gates below are ready.
+2. **Authorized database rehearsal:** obtain a protected backup/copy of the current cPanel review
+   database and rehearse migration/restore into the selected MySQL target. Verify records and
+   accounts, retain the original unchanged, and record the outcome. The synthetic CI fixture is
+   not a substitute for this data-specific rehearsal.
+3. **cPanel operational acceptance:** with authorized access and a human observer, validate the
+   deployment/update procedure, cron scheduler, map refresh success/failure behavior, and the
+   manual acceptance checklist in section 20 on `dev.akgmed.org`. No host or database changes
+   have been made by this work.
+4. **Release decision:** resolve any findings from the database rehearsal and dev acceptance,
+   obtain release approval, then update `VERSION` and create `v2.0.0` only after acceptance. Do not
+   deploy, merge, tag, or release as part of this repository-side work without that authorization.
+
+The local environment does not provide PHP/Composer or a database server; PHP/database validation
+was performed in GitHub Actions. No cPanel deployment, host-state change, merge, tag, or release
+was performed.
+
+This status supersedes the open-item assessment and resume sequence originally recorded on
+**2026-09-25 15:34 AWST**.

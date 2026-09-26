@@ -1,9 +1,16 @@
 {
   "private": true,
   "scripts": {
+    "build": "tailwindcss -i resources/css/app.css -o public/css/app.css --minify && node scripts/copy-frontend-assets.mjs",
     "test:browser": "playwright test"
   },
+  "dependencies": {
+    "alpinejs": "3.14.9",
+    "leaflet": "1.9.4"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.55.0"
+    "@playwright/test": "^1.55.0",
+    "@tailwindcss/cli": "4.1.13",
+    "tailwindcss": "4.1.13"
   }
 }
