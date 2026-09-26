@@ -10,7 +10,7 @@ return [
     // Local, self-contained map package. Runtime operation does not require ArcGIS.
     'sitemap_path' => env(
         'HWRT_SITEMAP_PATH',
-        env('CSEM_SITEMAP_PATH', app()->environment('production')
+        env('CSEM_SITEMAP_PATH', env('APP_ENV') === 'production'
             ? storage_path('app/hwrt-sitemap/current')
             : base_path('sitemap')),
     ),
