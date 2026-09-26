@@ -3,6 +3,7 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './tests/Browser',
   timeout: 60_000,
+  workers: 1,
   expect: { timeout: 20_000 },
   reporter: [
     ['line'],
