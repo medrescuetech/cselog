@@ -51,24 +51,43 @@ deployment:
     - /bin/rsync -a --delete
         --exclude='.git' --exclude='storage' --exclude='.env'
         $SRC/ $APP/
-    - cd $APP && /usr/local/bin/ea-php82 /usr/local/bin/composer install --no-dev --optimize-autoloader
-    - cd $APP && /usr/local/bin/ea-php82 artisan migrate --force
-    - cd $APP && /usr/local/bin/ea-php82 artisan config:cache
-    - cd $APP && /usr/local/bin/ea-php82 artisan route:cache
-    - cd $APP && /usr/local/bin/ea-php82 artisan view:cache
-    - cd $APP && /usr/local/bin/ea-php82 artisan storage:link
+    - cd $APP && /usr/local/bin/ea-php83 /usr/local/bin/composer install --no-dev --optimize-autoloader
+    - cd $APP && /usr/local/bin/ea-php83 artisan migrate --force
+    - cd $APP && /usr/local/bin/ea-php83 artisan optimize
 ```
 
 Paths (`USER`, the PHP binary, the Composer path) differ per host — confirm them on the actual
 cPanel account before relying on this.
 
-## Cron
+## Cron Scheduler
 
-```
-* * * * * /usr/local/bin/ea-php82 /home/USER/csem-app/artisan schedule:run >/dev/null 2>&1
+The application requires Laravel's scheduler to run every minute in cPanel Cron Jobs:
+
+```bash
+* * * * * /usr/local/bin/ea-php83 /home/USER/csem-app/artisan schedule:run >/dev/null 2>&1
 ```
 
-Drives overdue-entry alerts, the nightly DB backup and the location-health digest.
+The scheduler handles:
+- Background map refreshes (`php artisan hwrt:map-refresh --scheduled`) when cadence is set to daily, weekly, or monthly, or when requested via Admin Settings → Map.
+- Automated system queue processing.
+
+## Python & Library Requirements
+
+Background map refreshes execute `sitemap/tools/fetch_arcgis.py` using Python 3.
+
+- **Python Version**: Python 3.8+ (`python3`) must be installed on the cPanel host.
+- **Python Dependencies**: The `Pillow` image library is required (`pip install Pillow` or cPanel Python Virtual Environment / system package `python3-pillow`).
+- **Configuration**: The Python binary path can be configured in the UI under **Settings → Map** (`map.python` setting in DB, defaults to `python3`). If using a cPanel Virtualenv, specify the full binary path (e.g., `/home/USER/virtualenvs/hwrt/bin/python3`).
+
+## Outbound Network Requirements
+
+During normal operation, HWRT users interact **only** with local endpoints; no client-side browser traffic goes to external map servers.
+
+For background map refreshes (manual or scheduled), the server process makes outbound HTTPS GET requests (port 443) to public ArcGIS endpoints:
+- `https://enveng.maps.arcgis.com` (ArcGIS Portal item metadata)
+- `https://services-ap1.arcgis.com` (ArcGIS REST FeatureServer and MapServer layers)
+
+Ensure server firewalls or security modules allow outbound HTTPS requests to these hostnames.
 
 ## Environment (`~/csem-app/.env`, created once)
 
