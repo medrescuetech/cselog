@@ -68,6 +68,7 @@ Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function ()
     Route::post('/settings/map/refresh', [MapSettingsController::class, 'requestRefresh'])->name('settings.map.refresh');
 
     Route::get('/settings/locations', [LocationSettingsController::class, 'index'])->name('settings.locations.index');
+    Route::patch('/settings/locations/{location}/verify', [LocationSettingsController::class, 'verify'])->name('settings.locations.verify');
     Route::post('/settings/locations/{location}/document', [LocationSettingsController::class, 'upload'])->name('settings.locations.document.upload');
     Route::delete('/settings/locations/{location}/document', [LocationSettingsController::class, 'remove'])->name('settings.locations.document.remove');
 

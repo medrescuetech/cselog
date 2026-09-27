@@ -11,16 +11,30 @@ class LocationSettingsController extends Controller
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
+        $unverified = $request->boolean('unverified');
 
         return view('settings.locations', [
             'locations' => Location::query()
                 ->with('area:id,name')
                 ->when($q !== '', fn ($b) => $b->where('name', 'like', "%{$q}%"))
+                ->when($unverified, fn ($b) => $b->where('verified', false))
                 ->orderBy('name')
                 ->paginate(100)
                 ->withQueryString(),
             'q' => $q,
+            'unverified' => $unverified,
         ]);
+    }
+
+    public function verify(Request $request, Location $location)
+    {
+        $data = $request->validate(['verified' => 'required|boolean']);
+
+        $location->update(['verified' => (bool) $data['verified']]);
+
+        $state = $location->verified ? 'verified' : 'marked unverified';
+
+        return back()->with('status', "{$location->name} {$state}.");
     }
 
     public function upload(Request $request, Location $location)

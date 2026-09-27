@@ -6,7 +6,7 @@
   <div class="flex flex-wrap items-end gap-3">
     <div>
       <h1 class="text-2xl font-bold">Settings · Locations</h1>
-      <p class="text-sm text-slate-400 mt-1">Attach one optional PDF to a catalogue location. PDFs are stored privately and require an HWRT login to download.</p>
+      <p class="text-sm text-slate-400 mt-1">Verify locations created from dropped pins and attach one optional PDF per location. PDFs are stored privately and require an HWRT login to download.</p>
     </div>
     <div class="flex-1"></div>
     <a href="{{ route('settings.index') }}" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-2 text-sm">Back to Settings</a>
@@ -14,6 +14,9 @@
 
   <form method="get" class="flex gap-2 max-w-xl">
     <input type="search" name="q" value="{{ $q }}" placeholder="Search locations…" class="flex-1 rounded-lg bg-slate-800 border border-slate-700 px-3 py-2">
+    <label class="flex items-center gap-1.5 text-sm text-slate-300">
+      <input type="checkbox" name="unverified" value="1" @checked($unverified) class="rounded"> Unverified only
+    </label>
     <button class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2">Search</button>
   </form>
 
@@ -22,11 +25,28 @@
       <div class="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
         <div class="grid gap-3 md:grid-cols-[1fr_auto] items-start">
           <div>
-            <div class="font-semibold text-lg">{{ $location->name }}</div>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-lg">{{ $location->name }}</span>
+              @if ($location->verified)
+                <span class="text-[10px] uppercase text-emerald-400">verified</span>
+              @else
+                <span class="text-[10px] uppercase text-amber-400">unverified</span>
+              @endif
+            </div>
             <div class="text-xs text-slate-500">
               {{ $location->area?->name ?? 'No area' }} ·
-              E {{ number_format($location->easting, 1) }} N {{ number_format($location->northing, 1) }}
+              E {{ number_format($location->easting, 1) }} N {{ number_format($location->northing, 1) }} ·
+              used {{ $location->usage_count }}×
             </div>
+            <form method="post" action="{{ route('settings.locations.verify', $location) }}" class="mt-2">
+              @csrf @method('PATCH')
+              <input type="hidden" name="verified" value="{{ $location->verified ? 0 : 1 }}">
+              @if ($location->verified)
+                <button class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-sm">Mark unverified</button>
+              @else
+                <button class="rounded bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm font-semibold">Verify location</button>
+              @endif
+            </form>
 
             @if ($location->document_path)
               <div class="mt-3 rounded-lg border border-emerald-800 bg-emerald-950/30 p-3">

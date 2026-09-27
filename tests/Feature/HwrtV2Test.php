@@ -76,6 +76,34 @@ class HwrtV2Test extends TestCase
             ->assertDownload('vessel-a-plan.pdf');
     }
 
+    public function test_admin_can_verify_and_unverify_location(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role' => 'user']);
+        $location = Location::create(['name' => 'Pin 7', 'easting' => 476100, 'northing' => 7718100]);
+
+        $this->assertFalse($location->refresh()->verified);
+
+        $this->actingAs($user)
+            ->patch("/settings/locations/{$location->id}/verify", ['verified' => 1])
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->patch("/settings/locations/{$location->id}/verify", ['verified' => 1])
+            ->assertRedirect();
+        $this->assertTrue($location->refresh()->verified);
+
+        $this->actingAs($admin)
+            ->get('/settings/locations?unverified=1')
+            ->assertOk()
+            ->assertDontSee('Verify location');
+
+        $this->actingAs($admin)
+            ->patch("/settings/locations/{$location->id}/verify", ['verified' => 0])
+            ->assertRedirect();
+        $this->assertFalse($location->refresh()->verified);
+    }
+
     public function test_admin_can_add_manual_landmark(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
