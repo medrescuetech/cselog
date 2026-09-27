@@ -83,15 +83,15 @@
     </div>
 
     @php
-      $cadence = AppModelsSetting::value('map.refresh_cadence', 'manual');
-      $query = AppModelsSetting::value('map.imagery_query', 'Imagery - Site C');
-      $override = AppModelsSetting::value('map.imagery_service_override', '');
-      $lastAttempt = AppModelsSetting::value('map.last_attempt_at', '');
-      $lastSuccess = AppModelsSetting::value('map.last_success_at', '');
-      $lastStatus = AppModelsSetting::value('map.last_status', 'never');
-      $lastError = AppModelsSetting::value('map.last_error', '');
-      $requested = AppModelsSetting::value('map.refresh_requested_at', '');
-      $lastService = AppModelsSetting::value('map.last_imagery_service', '');
+      $cadence = \App\Models\Setting::value('map.refresh_cadence', 'manual');
+      $query = \App\Models\Setting::value('map.imagery_query', 'Imagery - Site C');
+      $override = \App\Models\Setting::value('map.imagery_service_override', '');
+      $lastAttempt = \App\Models\Setting::value('map.last_attempt_at', '');
+      $lastSuccess = \App\Models\Setting::value('map.last_success_at', '');
+      $lastStatus = \App\Models\Setting::value('map.last_status', 'never');
+      $lastError = \App\Models\Setting::value('map.last_error', '');
+      $requested = \App\Models\Setting::value('map.refresh_requested_at', '');
+      $lastService = \App\Models\Setting::value('map.last_imagery_service', '');
     @endphp
 
     <form method="post" action="{{ route('settings.map.update') }}" class="grid gap-3 lg:grid-cols-3">

@@ -66,6 +66,8 @@ class HwrtV2Test extends TestCase
         $this->assertSame('vessel-a-plan.pdf', $location->document_name);
         Storage::disk('local')->assertExists($location->document_path);
 
+        auth()->logout();
+
         $this->get("/locations/{$location->id}/document")->assertRedirect('/login');
 
         $this->actingAs($user)

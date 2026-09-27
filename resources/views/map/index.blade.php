@@ -2,8 +2,8 @@
 @section('title', 'Map')
 @section('main-class', 'relative')
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script src="/js/hwrt-map.js"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }

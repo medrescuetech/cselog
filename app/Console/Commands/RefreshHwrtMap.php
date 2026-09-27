@@ -59,8 +59,8 @@ class RefreshHwrtMap extends Command
 
             $this->info("Refresh footprint: {$bbox} (same Site C/F extent as current package)");
 
-            $this->run([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '17', '--bbox', $bbox, '--out', $l17]);
-            $this->run([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '16', '--bbox', $bbox, '--out', $l16]);
+            $this->executeCommand([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '17', '--bbox', $bbox, '--out', $l17]);
+            $this->executeCommand([$python, $root.'/tools/fetch_arcgis.py', 'imagery', $service, '16', '--bbox', $bbox, '--out', $l16]);
 
             $featureSources = [
                 'project-boundaries-infrastructure.geojson' => Setting::value(
@@ -82,7 +82,7 @@ class RefreshHwrtMap extends Command
             ];
 
             foreach ($featureSources as $file => $url) {
-                $this->run([
+                $this->executeCommand([
                     $python,
                     $root.'/tools/fetch_arcgis.py',
                     'features',
@@ -102,7 +102,7 @@ class RefreshHwrtMap extends Command
                 $this->atomicReplace($tmp.'/'.$file, $root.'/features/'.$file);
             }
 
-            $this->run([$python, $root.'/tools/build_manifest.py']);
+            $this->executeCommand([$python, $root.'/tools/build_manifest.py']);
 
             $exit = Artisan::call('sitemap:import', ['--path' => $root]);
             if ($exit !== self::SUCCESS) {
@@ -207,7 +207,7 @@ class RefreshHwrtMap extends Command
         return implode(',', [$e['xmin'], $e['ymin'], $e['xmax'], $e['ymax']]);
     }
 
-    private function run(array $command): void
+    private function executeCommand(array $command): void
     {
         $process = new Process($command, base_path(), null, null, 1800);
         $process->mustRun(function ($type, $buffer): void {
