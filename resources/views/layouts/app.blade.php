@@ -63,6 +63,7 @@ html[data-theme="light"] .leaflet-popup-tip{background:#fff!important;color:#0f1
     @endif
 
     <div class="flex-1"></div>
+    <a href="https://support.akgmed.org/" class="px-3 py-2 rounded text-slate-300 hover:bg-slate-800" target="_blank" rel="noopener noreferrer">Support</a>
     <form method="post" action="{{ route('logout') }}" class="ml-2">@csrf
       <button class="text-slate-400 hover:text-white px-2 py-2" title="{{ auth()->user()?->username }}">
         {{ auth()->user()?->name }} ⎋
