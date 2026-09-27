@@ -130,17 +130,21 @@ class UserManagementTest extends TestCase
             'name' => 'Admin',
             'username' => 'admin',
             'email' => null,
-            'password' => self::BOOTSTRAP_PASSWORD,
+            'password' => 'admin',
         ]]);
         $this->seed(DatabaseSeeder::class);
 
-        $this->post('/login', ['login' => 'admin', 'password' => self::BOOTSTRAP_PASSWORD])
+        $bootstrap = User::where('username', 'admin')->firstOrFail();
+        $this->assertTrue(Hash::check('admin', $bootstrap->password));
+        $this->assertTrue($bootstrap->must_change_password);
+
+        $this->post('/login', ['login' => 'admin', 'password' => 'admin'])
             ->assertRedirect(route('password.change'));
         $this->get('/board')->assertRedirect(route('password.change'));
         $this->get('/password/change')->assertOk()->assertSee('Change your password');
 
         $this->post('/password/change', [
-            'current_password' => self::BOOTSTRAP_PASSWORD,
+            'current_password' => 'admin',
             'password' => 'StrongPassword123!',
             'password_confirmation' => 'StrongPassword123!',
         ])->assertRedirect(route('board'));
@@ -223,7 +227,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue(Hash::check(self::BOOTSTRAP_PASSWORD, $bootstrap->password));
     }
 
-    public function test_bootstrap_admin_requires_an_explicit_strong_secret(): void
+    public function test_bootstrap_admin_rejects_missing_or_weak_override_secret(): void
     {
         config(['hwrt.bootstrap_admin' => [
             'name' => 'Admin',
@@ -239,15 +243,44 @@ class UserManagementTest extends TestCase
             $this->assertStringContainsString('HWRT_ADMIN_PASSWORD', $exception->getMessage());
         }
 
-        config(['hwrt.bootstrap_admin.password' => 'admin']);
+        config(['hwrt.bootstrap_admin.password' => 'short-secret']);
         try {
             app(\App\Support\BootstrapAdmin::class)->ensure();
-            $this->fail('Expected weak bootstrap secret to be rejected.');
+            $this->fail('Expected weak bootstrap override to be rejected.');
         } catch (\RuntimeException $exception) {
             $this->assertStringContainsString('at least 16 characters', $exception->getMessage());
         }
 
         $this->assertDatabaseMissing('users', ['username' => 'admin']);
+    }
+
+    public function test_bootstrap_setup_default_is_admin_admin_and_existing_account_is_not_reset(): void
+    {
+        config(['hwrt.bootstrap_admin' => [
+            'name' => 'Admin',
+            'username' => 'admin',
+            'email' => null,
+            'password' => 'admin',
+        ]]);
+
+        $this->artisan('hwrt:bootstrap-admin')->assertExitCode(0);
+        $admin = User::where('username', 'admin')->firstOrFail();
+        $this->assertSame('admin', $admin->role);
+        $this->assertTrue($admin->must_change_password);
+        $this->assertTrue(Hash::check('admin', $admin->password));
+
+        $this->post('/login', ['login' => 'admin', 'password' => 'admin'])
+            ->assertRedirect(route('password.change'));
+        $this->get('/board')->assertRedirect(route('password.change'));
+
+        $admin->update([
+            'password' => 'AlreadyChangedPassword123!',
+            'must_change_password' => false,
+        ]);
+        $this->artisan('hwrt:bootstrap-admin')->assertExitCode(0);
+        $admin->refresh();
+        $this->assertFalse($admin->must_change_password);
+        $this->assertTrue(Hash::check('AlreadyChangedPassword123!', $admin->password));
     }
 
     public function test_admin_cannot_deactivate_or_demote_own_account(): void

@@ -27,8 +27,8 @@ class BootstrapAdmin
         }
 
         $password = config('hwrt.bootstrap_admin.password');
-        if (! is_string($password) || strlen($password) < 16) {
-            throw new RuntimeException('Set HWRT_ADMIN_PASSWORD to a unique secret of at least 16 characters before creating the bootstrap Admin.');
+        if (! is_string($password) || ($password !== 'admin' && strlen($password) < 16)) {
+            throw new RuntimeException('Set HWRT_ADMIN_PASSWORD to a unique secret of at least 16 characters, or use the rotatable setup default, before creating the bootstrap Admin.');
         }
 
         $admin = User::firstOrCreate(

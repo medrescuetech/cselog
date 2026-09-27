@@ -985,8 +985,11 @@ overlapping work replaced by PR #8's local assets and database/browser CI. No un
 change was found for cherry-picking. PR #5 was intentionally left open; no remote PR lifecycle
 action was taken.
 
-The update-helper and credential-default gaps are being addressed on the PR #8 continuation
-branch. The deployment checklist's remaining host-specific inputs are still unverified: actual
+The helper work is recorded in local commit `bca37c2`; the subsequent bootstrap setup change restores
+the documented `admin` / `admin` first-use credentials while preserving forced password rotation,
+an environment override and idempotent reruns. Both commits are local to the continuation branch
+until authorized push access is available. The deployment checklist's remaining host-specific
+inputs are still unverified: actual
 domain/document root and deployed ref, PHP/Composer/client paths and extensions, configured DB and
 `.env` locations, writable truly off-host backup destination, staging database copy, maintenance
 window/recovery contact, and staging HTTPS acceptance. Passing CI or the local backup-copy check
