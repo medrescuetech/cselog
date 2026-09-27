@@ -62,7 +62,6 @@
           <button type="button" @click="picked = l" class="text-left rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-3 flex items-center gap-2">
             <span class="flex-1"><span class="font-medium" x-text="l.name"></span>
               <span class="text-xs text-slate-400 ml-2" x-text="l.area || ''"></span></span>
-            <span x-show="!l.verified" class="text-[10px] uppercase text-amber-400">unverified</span>
           </button>
         </template>
         <div x-show="q && !results.length" class="text-slate-400 text-sm px-1">No match — drop a pin below.</div>
