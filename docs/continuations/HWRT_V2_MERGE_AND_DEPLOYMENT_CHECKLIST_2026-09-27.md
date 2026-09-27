@@ -26,7 +26,7 @@ This checklist complements [docs/V2.md](../V2.md) and [the September 25 continua
 
 ## Gate 2 — product and data acceptance
 
-- [ ] Verify visible branding reads **HWRT — High Risk Work Tracker**, including login, navigation, page titles, error pages, downloads, and footer version. Decide whether legacy CSEM names in internal namespaces/log paths are intentional and document them.
+- [ ] Verify visible branding reads **HWRT — High Risk Work Tracker**, including login, navigation, page titles, error pages, downloads, and footer version. Confirm the top navigation shows **Support** linking to https://support.akgmed.org/ on desktop and narrow screens after PR #8 is merged. Decide whether legacy CSEM names in internal namespaces/log paths are intentional and document them.
 - [ ] Test upgrade of a copy of the current live database, not only a fresh SQLite seed. Confirm existing users can sign in with username or optional email, legacy roles migrate to User/Admin as specified, and an active Admin survives. Inventory conflicting usernames/emails before applying unique constraints.
 - [ ] Verify Admin can create, edit, activate/deactivate and reset users in Settings; User cannot enter admin routes. Verify self-demotion/deactivation and last-Admin protections, reserved bootstrap username, forced password change, and that bootstrap credentials cannot remain usable after setup. Do not publish default credentials.
 - [ ] Verify work-type configuration, required notes, Other description, historical references and immutable HRW IDs on existing and new entries.
