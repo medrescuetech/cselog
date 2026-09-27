@@ -969,3 +969,26 @@ was performed.
 
 This status supersedes the open-item assessment and resume sequence originally recorded on
 **2026-09-25 15:34 AWST**.
+
+## 25. Merge/deployment checklist follow-up — 2026-09-27
+
+The separately maintained `HWRT_V2_MERGE_AND_DEPLOYMENT_CHECKLIST_2026-09-27.md` was reviewed
+against the current PR/base state. PR #8 was still open and draft, targeting `v2/hwrt`; its
+then-current head was `3209db3` and the base head was `9b5da3e`. CI run `36296485697` passed all
+three jobs for that exact PR head. Earlier run `36211043330` passed, but tested the older
+`67fa750` commit and is not evidence for subsequent heads.
+
+PR #5's remaining map differences were compared file-by-file against merged PR #4 and V2: its
+fetch-error/fatal banner and retry behavior, `opts.manifest` bootstrap path, and optional-layer
+handling are present in the current mainline map implementation. Its CI and Leaflet assets are
+overlapping work replaced by PR #8's local assets and database/browser CI. No unique PR #5 map
+change was found for cherry-picking. PR #5 was intentionally left open; no remote PR lifecycle
+action was taken.
+
+The update-helper and credential-default gaps are being addressed on the PR #8 continuation
+branch. The deployment checklist's remaining host-specific inputs are still unverified: actual
+domain/document root and deployed ref, PHP/Composer/client paths and extensions, configured DB and
+`.env` locations, writable truly off-host backup destination, staging database copy, maintenance
+window/recovery contact, and staging HTTPS acceptance. Passing CI or the local backup-copy check
+does not satisfy those host gates. Do not merge, tag, or deploy until they are verified and
+approved.

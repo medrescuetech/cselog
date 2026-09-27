@@ -17,12 +17,26 @@ class BootstrapAdmin
             throw new RuntimeException('The configured bootstrap Admin username must be 3-80 letters, numbers, dots, underscores or hyphens.');
         }
 
+        $admin = User::query()->where('username', $username)->first();
+        if ($admin) {
+            if (! $admin->isAdmin()) {
+                throw new RuntimeException("Bootstrap username '{$username}' is already assigned to a non-admin account.");
+            }
+
+            return $admin;
+        }
+
+        $password = config('hwrt.bootstrap_admin.password');
+        if (! is_string($password) || strlen($password) < 16) {
+            throw new RuntimeException('Set HWRT_ADMIN_PASSWORD to a unique secret of at least 16 characters before creating the bootstrap Admin.');
+        }
+
         $admin = User::firstOrCreate(
             ['username' => $username],
             [
                 'name' => config('hwrt.bootstrap_admin.name', 'Admin'),
                 'email' => config('hwrt.bootstrap_admin.email'),
-                'password' => config('hwrt.bootstrap_admin.password', 'admin'),
+                'password' => $password,
                 'role' => 'admin',
                 'active' => true,
                 'must_change_password' => true,

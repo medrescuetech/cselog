@@ -23,7 +23,7 @@ return [
         'name' => env('HWRT_ADMIN_NAME', 'Admin'),
         'username' => env('HWRT_ADMIN_USERNAME', env('CSEM_ADMIN_EMAIL', 'admin')),
         'email' => env('HWRT_ADMIN_EMAIL') ?: null,
-        'password' => env('HWRT_ADMIN_PASSWORD', env('CSEM_ADMIN_PASSWORD', 'admin')),
+        'password' => env('HWRT_ADMIN_PASSWORD') ?: (env('CSEM_ADMIN_PASSWORD') ?: null),
     ],
 
     // Runtime privacy target. Frontend libraries are served locally.

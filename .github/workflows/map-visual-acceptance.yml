@@ -58,10 +58,20 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Test update-helper safety paths
+        run: bash tests/Support/update-hwrt-script-test.sh
+
+      - name: Install MySQL-compatible client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y mariadb-client
+
       - name: Configure MySQL-compatible application database
         run: |
           cp .env.example .env
           sed -i "s/^APP_ENV=.*/APP_ENV=testing/; s/^DB_CONNECTION=.*/DB_CONNECTION=${{ matrix.driver }}/" .env
+          bootstrap_password="$(openssl rand -hex 24)"
+          sed -i "s/^HWRT_ADMIN_PASSWORD=.*/HWRT_ADMIN_PASSWORD=$bootstrap_password/" .env
           {
             echo "DB_HOST=127.0.0.1"
             echo "DB_PORT=3306"
@@ -89,6 +99,20 @@ jobs:
 
       - name: Run feature and unit tests on ${{ matrix.driver }}
         run: php artisan test
+
+      - name: Rehearse database dump and restore
+        run: |
+          backup_dir="$(mktemp -d)"
+          chmod 700 "$backup_dir"
+          backup_output="$(php scripts/backup-hwrt-database.php "$backup_dir")"
+          printf '%s\n' "$backup_output"
+          [[ "$backup_output" != *"hwrt-test-password"* ]]
+          backup_file="$(find "$backup_dir" -maxdepth 1 -type f -name 'database-*.sql' -print -quit)"
+          test -n "$backup_file"
+          restore_output="$(php scripts/restore-hwrt-database.php "$backup_file" --confirm-database=hwrt)"
+          printf '%s\n' "$restore_output"
+          [[ "$restore_output" != *"hwrt-test-password"* ]]
+          php artisan migrate:status
 
   map-browser:
     runs-on: ubuntu-latest
@@ -126,12 +150,29 @@ jobs:
           cp -a sitemap/. storage/app/hwrt-sitemap/versions/ci/
           ln -s versions/ci storage/app/hwrt-sitemap/current
           echo "HWRT_SITEMAP_PATH=$GITHUB_WORKSPACE/storage/app/hwrt-sitemap/current" >> .env
+          bootstrap_password="$(openssl rand -hex 24)"
+          sed -i "s/^HWRT_ADMIN_PASSWORD=.*/HWRT_ADMIN_PASSWORD=$bootstrap_password/" .env
+          printf 'HWRT_ADMIN_PASSWORD=%s\n' "$bootstrap_password" >> "$GITHUB_ENV"
           php artisan key:generate
           php artisan migrate:fresh --seed
           php artisan sitemap:import
 
       - name: Run PHPUnit
         run: php artisan test
+
+      - name: Rehearse SQLite backup and restore
+        run: |
+          backup_dir="$(mktemp -d)"
+          chmod 700 "$backup_dir"
+          backup_output="$(php scripts/backup-hwrt-database.php "$backup_dir")"
+          printf '%s\n' "$backup_output"
+          [[ "$backup_output" != *"$HWRT_ADMIN_PASSWORD"* ]]
+          backup_file="$(find "$backup_dir" -maxdepth 1 -type f -name 'database-*.sqlite' -print -quit)"
+          test -n "$backup_file"
+          restore_output="$(php scripts/restore-hwrt-database.php "$backup_file" --confirm-database="$GITHUB_WORKSPACE/database/database.sqlite")"
+          printf '%s\n' "$restore_output"
+          [[ "$restore_output" != *"$HWRT_ADMIN_PASSWORD"* ]]
+          php artisan migrate:status
 
       - name: Install browser test dependencies
         run: |
