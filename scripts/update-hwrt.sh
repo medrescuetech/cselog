@@ -3,6 +3,7 @@
 # Usage:
 #   ./scripts/update-hwrt.sh              # update current branch from origin
 #   ./scripts/update-hwrt.sh v2.0.1       # checkout/update a release tag or branch
+#   ./scripts/update-hwrt.sh --no-git     # update an already checked-out release
 set -euo pipefail
 
 APP="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -11,6 +12,15 @@ cd "$APP"
 PHP="${PHP_BIN:-$(command -v php)}"
 COMPOSER="${COMPOSER_BIN:-$(command -v composer)}"
 TARGET="${1:-}"
+SKIP_GIT=false
+if [[ "$TARGET" == "--no-git" ]]; then
+  SKIP_GIT=true
+  TARGET=""
+fi
+if (( $# > 1 )); then
+  echo "Usage: $0 [release-tag|branch|--no-git]" >&2
+  exit 2
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP="$APP/storage/app/backups"
 RUNTIME_MAP="$APP/storage/app/hwrt-sitemap"
@@ -57,16 +67,18 @@ fi
 up() { "$PHP" artisan up >/dev/null 2>&1 || true; }
 trap up EXIT
 
-git fetch --tags origin
-if [[ -n "$TARGET" ]]; then
-  git checkout "$TARGET"
-else
-  BRANCH="$(git branch --show-current)"
-  if [[ -z "$BRANCH" ]]; then
-    echo "Detached HEAD: supply a target tag/branch explicitly." >&2
-    exit 2
+if [[ "$SKIP_GIT" == false ]]; then
+  git fetch --tags origin
+  if [[ -n "$TARGET" ]]; then
+    git checkout "$TARGET"
+  else
+    BRANCH="$(git branch --show-current)"
+    if [[ -z "$BRANCH" ]]; then
+      echo "Detached HEAD: supply a target tag/branch explicitly." >&2
+      exit 2
+    fi
+    git pull --ff-only origin "$BRANCH"
   fi
-  git pull --ff-only origin "$BRANCH"
 fi
 
 "$COMPOSER" install --no-dev --optimize-autoloader --no-interaction
