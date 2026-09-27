@@ -221,6 +221,23 @@ class UserManagementTest extends TestCase
         $this->assertTrue(Hash::check('admin', $bootstrap->password));
     }
 
+    public function test_production_bootstrap_rejects_default_password(): void
+    {
+        $previousEnvironment = $this->app['env'];
+        $previousPassword = config('hwrt.bootstrap_admin.password');
+        $this->app['env'] = 'production';
+        config(['hwrt.bootstrap_admin.password' => 'admin']);
+
+        try {
+            $this->expectException(\\RuntimeException::class);
+            $this->expectExceptionMessage('HWRT_ADMIN_PASSWORD');
+            (new \\App\\Support\\BootstrapAdmin())->ensure();
+        } finally {
+            $this->app['env'] = $previousEnvironment;
+            config(['hwrt.bootstrap_admin.password' => $previousPassword]);
+        }
+    }
+
     public function test_admin_cannot_deactivate_or_demote_own_account(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'active' => true]);
