@@ -2,31 +2,29 @@
 
 **Date:** 27 September 2026 (Australia/Perth)  
 **Repository:** medrescuetech/cselog  
-**Target:** merge `v2/hwrt` into `main`, tag a tested V2 release, then update the cPanel installation.  
+**Target:** merge PR #10 (`v2/release-candidate`) into `main`, tag a tested V2 release, then update the cPanel installation.  
 **Status:** in progress. A passing CI run is evidence for its tested commit only; it does not prove a live deployment.
 
 This checklist complements [docs/V2.md](../V2.md) and [the September 25 continuation](HWRT_V2_CONTINUATION_2026-09-25_1534_AWST.md). Work through the gates in order and record evidence in the V2 PR. Do not mark a gate complete merely because code or a plan exists.
 
-## Current repository facts
+## Current repository facts (28 September 2026)
 
-- `main` includes merged PR #4 (map startup and browser acceptance), #6 (diagnostics), and #7 (initial four-role user manager and board headers).
-- PR #5 is open against `main` and reports `mergeable=false`. Its map startup and visual CI changes overlap PR #4; its local Leaflet assets overlap V2/PR #8. Do not merge it wholesale. Compare its unique improvements individually, close as superseded once accounted for.
-- `v2/hwrt` is 81 commits ahead and zero behind `main` at the time of review. It carries HWRT branding, username and two-role access, settings, pending work, reports/CSV, map features, and an update helper.
-- PR #8 is open and mergeable into `v2/hwrt`, adding bootstrap account protection, atomic map-package publishing, local assets, and further tests. Its head `67fa750` has a successful Visual map acceptance workflow run `36211043330`; inspect job steps and artifacts before treating the whole V2 test matrix as complete.
-- `VERSION` on V2 is `2.0.0-dev`. There is no established V2 release tag or verified cPanel V2 rollout.
-- Known review host path from the continuation is `/home/akgmxkpo/csem-review`, but the current domain document root and deployed Git ref remain unverified.
+- PR #10 is the consolidated `v2/release-candidate` to `main` PR and includes the useful work from closed PRs #8 and #9, the Support link, and this checklist. PR #5 is closed as superseded. PR #11 remains open separately, but its location-picker badge removal is already in the release candidate.
+- The release candidate is mergeable and the Visual map acceptance CI run on `c77959e` passed map/browser, MySQL and MariaDB jobs. Later documentation commits require final-head CI recheck. The CI database jobs do not yet prove a dump/restore on the cPanel host.
+- `VERSION` remains `2.0.0-dev`. There is no V2 release tag or verified staging/production deployment.
+- Known review host path is `/home/akgmxkpo/csem-review`; the current document root and deployed ref remain unverified.
 
 ## Gate 1 — reconcile branches and scope
 
-- [ ] Open a V2-to-`main` PR (or verify one exists) and attach this checklist. Capture the exact base/head SHAs and check GitHub's mergeability after PR #8 is integrated.
-- [ ] Review PR #8 file changes and CI logs/artifacts. Merge it into `v2/hwrt` only after its bootstrap, permissions and map-publisher behaviour pass tests and review. Recheck `v2/hwrt` head and CI afterwards.
-- [ ] Compare PR #5 file by file with merged PR #4 and V2. Keep only demonstrably missing value; avoid restoring older map startup logic or a second overlapping CI suite. Close PR #5 as superseded when the comparison is documented.
+- [x] Consolidate V2 in PR #10 against `main`. [ ] Capture the final head SHA and mergeability after staging acceptance.
+- [x] Carry PR #8 bootstrap, permissions and map-publisher changes into the consolidated PR #10 branch. [ ] Complete staging acceptance of these paths.
+- [x] Close overlapping PR #5 as superseded by merged PR #4 and the consolidated V2 branch.
 - [ ] Check the complete V2 diff against `main` for accidental generated files, credentials, old branding in visible UI, and unrelated changes. Preserve existing user records and historical entries.
 - [ ] Resolve any outstanding reviews or branch protection checks on the V2 PR. Recheck the final merge commit candidate rather than relying on an older passing run.
 
 ## Gate 2 — product and data acceptance
 
-- [ ] Verify visible branding reads **HWRT — High Risk Work Tracker**, including login, navigation, page titles, error pages, downloads, and footer version. Confirm the top navigation shows **Support** linking to https://support.akgmed.org/ on desktop and narrow screens after PR #8 is merged. Decide whether legacy CSEM names in internal namespaces/log paths are intentional and document them.
+- [ ] Verify visible branding reads **HWRT — High Risk Work Tracker**, including login, navigation, page titles, error pages, downloads, and footer version. Confirm the top navigation shows **Support** linking to https://support.akgmed.org/ on desktop and narrow screens on PR #10. Decide whether legacy CSEM names in internal namespaces/log paths are intentional and document them.
 - [ ] Test upgrade of a copy of the current live database, not only a fresh SQLite seed. Confirm existing users can sign in with username or optional email, legacy roles migrate to User/Admin as specified, and an active Admin survives. Inventory conflicting usernames/emails before applying unique constraints.
 - [ ] Verify Admin can create, edit, activate/deactivate and reset users in Settings; User cannot enter admin routes. Verify self-demotion/deactivation and last-Admin protections, reserved bootstrap username, forced password change, and that bootstrap credentials cannot remain usable after setup. Do not publish default credentials.
 - [ ] Verify work-type configuration, required notes, Other description, historical references and immutable HRW IDs on existing and new entries.
@@ -43,7 +41,7 @@ This checklist complements [docs/V2.md](../V2.md) and [the September 25 continua
 - [x] Implement backup of the actual configured database before migrations: SQLite consistent snapshot or MariaDB/MySQL compressed dump, failing the update if backup fails. See [database backup and restore](../12-database-backup-and-restore.md). [ ] Rehearse dump and restore with the actual cPanel database, and make a verified off-host copy. Do not put secrets into command output or Git.
 - [ ] Back up/restorable uploads, map package, `.env` location and release ref. Distinguish code rollback from database restore if a migration is irreversible. Test restore on a disposable copy.
 - [ ] Verify PHP and Composer paths, permissions, build artifacts and `vendor/` on cPanel without sudo. Ensure local Tailwind, Alpine and Leaflet files are available after a clean deployment.
-- [ ] Correct old cPanel deployment guidance (`ea-php82`, placeholder paths and contradictory deploy layouts) to match the actual PHP 8.3 host, document root, app directory and the chosen single update mechanism. Never run the old sketch's `rsync --delete` against live storage.
+- [x] Replace the old cPanel `rsync --delete` and password-in-command sketch with the V2 SSH release procedure in [deployment guidance](../08-deployment-cpanel.md). [ ] Fill in actual host PHP path, domain document root and database after inspecting cPanel.
 - [ ] Make the helper idempotent and run it twice on the staging copy. Confirm the second run leaves the database, map files, and Git checkout healthy. Document exact install/update and rollback commands with examples.
 
 ## Gate 4 — automated and manual verification
@@ -71,7 +69,7 @@ This checklist complements [docs/V2.md](../V2.md) and [the September 25 continua
 
 ## Immediate next actions
 
-1. Review and integrate PR #8 into `v2/hwrt`.
-2. Repair the update helper and contradictory docs, then verify upgrade/restore on a database copy.
-3. Complete full CI and staging acceptance on the final V2 SHA.
-4. Open/finish the V2-to-`main` PR, merge, tag, and deploy the exact tested release.
+1. Inspect cPanel's actual document root, database driver, dump utility and current deployment ref.
+2. Rehearse PR #10 upgrade, backup and restore against a staging copy, including a second idempotent update.
+3. Complete final-head CI and acceptance; set release version, merge PR #10, and tag the exact tested release.
+4. Update the production site from that release and record smoke tests and rollback reference.
