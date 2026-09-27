@@ -31,12 +31,7 @@ mkdir -p "$BACKUP"
 echo "HWRT update: $(cat VERSION 2>/dev/null || echo unknown)"
 echo "Application: $APP"
 
-if [[ -f "$APP/database/database.sqlite" ]]; then
-  cp -p "$APP/database/database.sqlite" "$BACKUP/database-$STAMP.sqlite"
-  echo "SQLite backup: $BACKUP/database-$STAMP.sqlite"
-else
-  echo "Database is not SQLite; confirm your normal cPanel/MySQL backup exists before major upgrades."
-fi
+"$PHP" artisan hwrt:backup-database --output="$BACKUP"
 
 # Runtime map versions are intentionally outside Git. `current` is the atomic package pointer.
 mkdir -p "$RUNTIME_MAP/versions"
