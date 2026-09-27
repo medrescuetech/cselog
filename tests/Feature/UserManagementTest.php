@@ -229,9 +229,9 @@ class UserManagementTest extends TestCase
         config(['hwrt.bootstrap_admin.password' => 'admin']);
 
         try {
-            $this->expectException(\\RuntimeException::class);
+            $this->expectException(\RuntimeException::class);
             $this->expectExceptionMessage('HWRT_ADMIN_PASSWORD');
-            (new \\App\\Support\\BootstrapAdmin())->ensure();
+            (new \App\Support\BootstrapAdmin())->ensure();
         } finally {
             $this->app['env'] = $previousEnvironment;
             config(['hwrt.bootstrap_admin.password' => $previousPassword]);
