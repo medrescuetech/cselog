@@ -96,7 +96,7 @@ class HwrtV2Test extends TestCase
         $this->actingAs($admin)
             ->get('/settings/locations?unverified=1')
             ->assertOk()
-            ->assertDontSee('Pin 7');
+            ->assertViewHas('locations', fn ($locations) => $locations->getCollection()->doesntContain('id', $location->id));
 
         $this->actingAs($admin)
             ->patch("/settings/locations/{$location->id}/verify", ['verified' => 0])
