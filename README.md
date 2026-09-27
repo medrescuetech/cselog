@@ -58,58 +58,78 @@ password: changeme
 
 Change this before any real deployment.
 
-## cPanel / SSH review deployment
+## Production Prerequisites & System Requirements
 
-The application document root must point at the Laravel `public/` directory.
+1. **PHP**: PHP 8.3 with extensions `mbstring`, `pdo_sqlite` or `pdo_mysql`, `fileinfo`.
+2. **cPanel Cron Scheduler**: Run Laravel's scheduler every minute in cPanel Cron Jobs:
+   ```bash
+   * * * * * /usr/local/bin/ea-php83 /home/USER/csem-review/artisan schedule:run >/dev/null 2>&1
+   ```
+3. **Python & Pillow (for background map refresh)**:
+   - Python 3.8+ (`python3`).
+   - `Pillow` image library installed (`pip install Pillow` or system package `python3-pillow`).
+   - Binary path configurable in **Settings → Map** (`map.python` setting).
+4. **Network Access**: Outbound HTTPS (port 443) to `https://enveng.maps.arcgis.com` and `https://services-ap1.arcgis.com` for background map updates. No outbound traffic is required for normal application/user operation.
 
-For the current review installation used during development:
+## Deployment Options
 
-```text
-/home/akgmxkpo/csem-review/public
-```
+### Option 1: SSH Automated Update (Recommended)
 
-V2 production/review should use a runtime map directory outside the Git-tracked package:
-
-```text
-storage/app/hwrt-sitemap
-```
-
-with:
-
-```text
-public/sitemap -> ../storage/app/hwrt-sitemap
-```
-
-This prevents automatic map refreshes from dirtying the Git working tree.
-
-## Updating from Git
-
-Use:
+When SSH access is available:
 
 ```bash
 cd ~/csem-review
-./scripts/update-hwrt.sh
+./scripts/update-hwrt.sh            # Update to latest on current branch
+./scripts/update-hwrt.sh v2.0.1     # Update to specific release tag
 ```
 
-or update to a specific release/tag:
+The `update-hwrt.sh` helper automatically:
+1. Backs up SQLite database (if used);
+2. Seeds and maintains the decoupled runtime map package in `storage/app/hwrt-sitemap`;
+3. Sets Laravel to maintenance mode (`artisan down`);
+4. Fetches Git changes and checks out the requested release/branch;
+5. Installs Composer dependencies (`composer install --no-dev --optimize-autoloader`);
+6. Runs database migrations (`php artisan migrate --force`);
+7. Bootstraps rotatable admin credentials (`php artisan hwrt:bootstrap-admin`);
+8. Imports local runtime map data (`php artisan sitemap:import`);
+9. Optimizes application caches (`php artisan optimize`);
+10. Restores online status (`artisan up`).
 
-```bash
-./scripts/update-hwrt.sh v2.0.1
-```
+### Option 2: cPanel Git Version Control (`.cpanel.yml`)
 
-The helper:
+When using cPanel's Git interface without direct SSH shell access:
+1. Push release commits to GitHub.
+2. In cPanel → **Git Version Control**, trigger **Update from Remote**.
+3. cPanel executes deployment tasks defined in `.cpanel.yml`:
+   - Syncs code to the application directory;
+   - Runs `composer install --no-dev --optimize-autoloader`;
+   - Executes `php artisan migrate --force`;
+   - Runs `php artisan optimize`.
 
-1. backs up SQLite when present;
-2. seeds/maintains the runtime map copy;
-3. puts Laravel into maintenance mode;
-4. fetches Git changes/tags;
-5. installs Composer dependencies;
-6. runs migrations;
-7. imports the runtime sitemap;
-8. optimises Laravel;
-9. restores the application.
+### Option 3: Manual File Updating (FTP / File Manager)
 
-For MariaDB/MySQL deployments, use the normal cPanel/database backup process before major upgrades.
+If updating files manually via SFTP or cPanel File Manager:
+1. Upload updated application files **without** overwriting `.env`, `database/database.sqlite`, or `storage/`.
+2. Run database migrations: `php artisan migrate --force`
+3. Re-import map data if modified: `php artisan sitemap:import`
+4. Clear and optimize caches: `php artisan optimize`
+
+### Node Assets & Frontend Changes
+
+If frontend JavaScript or CSS assets are updated:
+- Run asset compilation locally or in CI: `npm ci && npm run build`
+- Node is **not** required on the cPanel production server. Compiled assets are served directly from `public/css/app.css` and local vendor directories (`public/vendor/leaflet/`, `public/vendor/alpinejs/`).
+
+## Future Release & Rollout Strategy
+
+1. **Version Tagging**: Every official release is tagged with semantic versioning (`v2.0.0`, `v2.0.1`, `v2.1.0`).
+2. **Database Backups**: Always perform a database backup (`mysqldump` for MySQL/MariaDB or SQLite copy) before applying updates.
+3. **Decoupled Sitemap**: Runtime map updates are stored under `storage/app/hwrt-sitemap/` with atomic symlink switching, keeping Git history clean.
+4. **Staging Environment**: Validate updates on a staging subdomain (`staging.example.com`) before production deployment.
+5. **Rollback Strategy**:
+   - Code rollback: `git checkout <previous-tag>`
+   - Database rollback: restore pre-update database backup.
+   - Sitemap rollback: `MapPackagePublisher` automatically restores the previous map package if a refresh or import fails.
 
 ## Map refresh
 

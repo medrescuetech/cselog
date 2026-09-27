@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 # End-to-end smoke test against a running dev server (php artisan serve).
-# Usage: scripts/smoke.sh [base_url] [email] [password]
+# Usage: scripts/smoke.sh [base_url] [login_identity] [password]
 set -euo pipefail
-B=${1:-http://localhost:8000}; EMAIL=${2:-admin@example.com}; PASS=${3:-changeme}
+B=${1:-http://localhost:8000}; LOGIN=${2:-admin}; PASS=${3:-admin}
 J=$(mktemp); trap 'rm -f $J' EXIT
 c() { curl -s -b "$J" -c "$J" "$@"; }
 tok() { c "$B$1" | grep -o 'name="_token" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"//'; }
 code() { c -o /dev/null -w '%{http_code}' "$@"; }
 
-echo "login:      $(c -o /dev/null -w '%{http_code}' -X POST "$B/login" -d "_token=$(tok /login)&email=$EMAIL&password=$PASS")"
+T_LOGIN=$(tok /login)
+c -s -X POST "$B/login" -d "_token=$T_LOGIN&login=$LOGIN&password=$PASS" > /dev/null
+
+# If redirected to password change due to initial setup requirement, complete rotation:
+PW_TOK=$(tok /password/change || true)
+if [[ -n "$PW_TOK" ]]; then
+  NEW_PASS="SmokePass123!"
+  c -s -X POST "$B/password/change" -d "_token=$PW_TOK&current_password=$PASS&password=$NEW_PASS&password_confirmation=$NEW_PASS" > /dev/null
+fi
 for p in /board /map /history /log /api/layers /api/areas /api/landmarks "/api/locations?q=control" ; do echo "$p: $(code "$B$p")"; done
 echo "nearby:     $(c "$B/api/locations/nearby?easting=476400&northing=7718700" | head -c 200)"
 T=$(tok /log)
