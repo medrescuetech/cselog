@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Settings · Landmarks')
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script src="/js/hwrt-map.js"></script>
 <style>#landmark-map{height:420px}</style>
 @endpush
