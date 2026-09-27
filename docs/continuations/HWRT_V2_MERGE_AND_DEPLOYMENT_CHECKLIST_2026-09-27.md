@@ -37,8 +37,8 @@ This checklist complements [docs/V2.md](../V2.md) and [the September 25 continua
 
 ## Gate 3 — repair the update path before it is used
 
-- [ ] Reconcile the documentation with `scripts/update-hwrt.sh`: `docs/V2.md` describes `./scripts/update-hwrt.sh --no-git`, while the script treats its argument as a Git target and has no `--no-git` option. Implement and test a documented interface.
-- [ ] Resolve `public/sitemap` handling. It is a tracked path on V2; the helper calls `ln -sfn` on it, which cannot safely replace a non-empty tracked directory. Choose a single source of truth for runtime map files and publish/swap atomically without dirtying the Git worktree or nesting a symlink inside the directory.
+- [x] Implement the documented `scripts/update-hwrt.sh --no-git` interface for an already checked-out release. Rehearse it on staging before production use.
+- [ ] Verify `public/sitemap` on staging is the tracked symlink `../storage/app/hwrt-sitemap/current` (confirmed in the release-candidate checkout). A legacy deployment with a real directory intentionally causes the helper to stop before maintenance mode; migrate that directory to the runtime package deliberately and rehearse the atomic package swap.
 - [ ] Avoid changing Git refs while the app is in maintenance mode unless failure handling and rollback are tested. Validate branch/tag and clean working tree before mutation; refuse unsupported targets. Ensure maintenance mode exits on every failure.
 - [ ] Back up the actual configured database before migrations. The helper currently copies only `database/database.sqlite`; for cPanel MariaDB/MySQL it merely prints a reminder. Add a tested dump/restore procedure and an off-host copy appropriate to the deployed database. Do not put secrets into command output or Git.
 - [ ] Back up/restorable uploads, map package, `.env` location and release ref. Distinguish code rollback from database restore if a migration is irreversible. Test restore on a disposable copy.
