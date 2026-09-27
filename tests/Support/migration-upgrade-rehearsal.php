@@ -95,7 +95,7 @@ if ($mode === 'verify') {
         || ! $bootstrap->isAdmin()
         || ! $bootstrap->active
         || ! $bootstrap->must_change_password
-        || ! Hash::check('admin', $bootstrap->password)) {
+        || ! Hash::check((string) config('hwrt.bootstrap_admin.password'), $bootstrap->password)) {
         fwrite(STDERR, "The new bootstrap Admin was not provisioned with required password rotation.\n");
         exit(1);
     }

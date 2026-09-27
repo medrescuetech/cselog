@@ -12,6 +12,8 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const BOOTSTRAP_PASSWORD = 'test-only-bootstrap-secret-2026!';
+
     public function test_only_admin_can_access_user_settings(): void
     {
         $user = User::factory()->create(['role' => 'user']);
@@ -103,7 +105,7 @@ class UserManagementTest extends TestCase
             'name' => 'Admin',
             'username' => 'admin',
             'email' => null,
-            'password' => 'admin',
+            'password' => self::BOOTSTRAP_PASSWORD,
         ]]);
 
         $existing = User::factory()->create([
@@ -124,10 +126,10 @@ class UserManagementTest extends TestCase
         $this->assertSame('admin', $bootstrap->role);
         $this->assertTrue($bootstrap->active);
         $this->assertTrue($bootstrap->must_change_password);
-        $this->assertTrue(Hash::check('admin', $bootstrap->password));
+        $this->assertTrue(Hash::check(self::BOOTSTRAP_PASSWORD, $bootstrap->password));
 
         $this->artisan('hwrt:bootstrap-admin')->assertExitCode(0);
-        $this->assertTrue(Hash::check('admin', $bootstrap->fresh()->password));
+        $this->assertTrue(Hash::check(self::BOOTSTRAP_PASSWORD, $bootstrap->fresh()->password));
         $this->assertTrue($bootstrap->fresh()->must_change_password);
     }
 
@@ -137,17 +139,17 @@ class UserManagementTest extends TestCase
             'name' => 'Admin',
             'username' => 'admin',
             'email' => null,
-            'password' => 'admin',
+            'password' => self::BOOTSTRAP_PASSWORD,
         ]]);
         $this->seed(DatabaseSeeder::class);
 
-        $this->post('/login', ['login' => 'admin', 'password' => 'admin'])
+        $this->post('/login', ['login' => 'admin', 'password' => self::BOOTSTRAP_PASSWORD])
             ->assertRedirect(route('password.change'));
         $this->get('/board')->assertRedirect(route('password.change'));
         $this->get('/password/change')->assertOk()->assertSee('Change your password');
 
         $this->post('/password/change', [
-            'current_password' => 'admin',
+            'current_password' => self::BOOTSTRAP_PASSWORD,
             'password' => 'StrongPassword123!',
             'password_confirmation' => 'StrongPassword123!',
         ])->assertRedirect(route('board'));
@@ -180,7 +182,7 @@ class UserManagementTest extends TestCase
             'name' => 'New bootstrap name',
             'username' => 'admin',
             'email' => null,
-            'password' => 'admin',
+            'password' => null,
         ]]);
         $existing = User::factory()->create([
             'name' => 'Existing setup Admin',
@@ -204,7 +206,7 @@ class UserManagementTest extends TestCase
             'name' => 'Admin',
             'username' => 'admin',
             'email' => null,
-            'password' => 'admin',
+            'password' => self::BOOTSTRAP_PASSWORD,
         ]]);
         $legacy = User::factory()->create([
             'name' => 'Existing Admin',
@@ -227,7 +229,34 @@ class UserManagementTest extends TestCase
         $bootstrap = User::where('username', 'admin')->firstOrFail();
         $this->assertSame('admin', $bootstrap->role);
         $this->assertTrue($bootstrap->must_change_password);
-        $this->assertTrue(Hash::check('admin', $bootstrap->password));
+        $this->assertTrue(Hash::check(self::BOOTSTRAP_PASSWORD, $bootstrap->password));
+    }
+
+    public function test_bootstrap_admin_requires_an_explicit_strong_secret(): void
+    {
+        config(['hwrt.bootstrap_admin' => [
+            'name' => 'Admin',
+            'username' => 'admin',
+            'email' => null,
+            'password' => null,
+        ]]);
+
+        try {
+            app(\App\Support\BootstrapAdmin::class)->ensure();
+            $this->fail('Expected missing bootstrap secret to be rejected.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('HWRT_ADMIN_PASSWORD', $exception->getMessage());
+        }
+
+        config(['hwrt.bootstrap_admin.password' => 'admin']);
+        try {
+            app(\App\Support\BootstrapAdmin::class)->ensure();
+            $this->fail('Expected weak bootstrap secret to be rejected.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('at least 16 characters', $exception->getMessage());
+        }
+
+        $this->assertDatabaseMissing('users', ['username' => 'admin']);
     }
 
     public function test_production_bootstrap_rejects_default_password(): void

@@ -1,6 +1,11 @@
 const { test, expect } = require('@playwright/test');
 
-let adminPassword = process.env.HWRT_ADMIN_PASSWORD || 'admin';
+const bootstrapPassword = process.env.HWRT_ADMIN_PASSWORD;
+if (!bootstrapPassword || bootstrapPassword.length < 16) {
+  throw new Error('Set HWRT_ADMIN_PASSWORD to the CI-only bootstrap secret.');
+}
+
+let adminPassword = bootstrapPassword;
 
 async function login(page) {
   await page.goto('/login');
@@ -13,7 +18,7 @@ async function login(page) {
 
   if (new URL(page.url()).pathname === '/password/change') {
     adminPassword = 'HwrtBrowserPass123!';
-    await page.locator('[name="current_password"]').fill(process.env.HWRT_ADMIN_PASSWORD || 'admin');
+    await page.locator('[name="current_password"]').fill(bootstrapPassword);
     await page.locator('[name="password"]').fill(adminPassword);
     await page.locator('[name="password_confirmation"]').fill(adminPassword);
     await Promise.all([
