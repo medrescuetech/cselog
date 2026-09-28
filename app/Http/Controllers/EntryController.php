@@ -9,6 +9,7 @@ use App\Models\WorkType;
 use App\Models\WorkTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -42,7 +43,14 @@ class EntryController extends Controller
             'planned_start_at' => 'nullable|date',
             'work_tags' => 'nullable|array|max:12',
             'work_tags.*' => ['integer', 'distinct', Rule::exists('work_tags', 'id')->where('active', true)],
+            'submission_key' => 'nullable|uuid',
         ]);
+
+        if (! empty($d['submission_key'])) {
+            $existing = Entry::where('opened_by', $request->user()->id)
+                ->where('submission_key', $d['submission_key'])->first();
+            if ($existing) return $this->duplicateSubmission($request, $existing);
+        }
 
         $type = WorkType::findOrFail($d['work_type_id']);
         if ($type->is_other && blank($d['other_description'] ?? null)) {
@@ -86,7 +94,8 @@ class EntryController extends Controller
             ];
         }
 
-        $entry = Entry::create([
+        try {
+            $entry = Entry::create([
             'location_id' => $location?->id,
             'location_label' => $location?->name ?? $d['location_label'],
             'easting' => $e,
@@ -104,7 +113,14 @@ class EntryController extends Controller
             // Start replaces these with the actual time/user and preserves planned_start_at.
             'opened_at' => $openedAt,
             'opened_by' => $request->user()->id,
-        ]);
+            'submission_key' => $d['submission_key'] ?? null,
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            $existing = Entry::where('opened_by', $request->user()->id)
+                ->where('submission_key', $d['submission_key'] ?? null)->first();
+            if ($existing && ! empty($d['submission_key'])) return $this->duplicateSubmission($request, $existing);
+            throw $e;
+        }
         $entry->workTags()->sync($d['work_tags'] ?? []);
         $entry->log($planned ? 'scheduled' : 'created', $changes);
 
@@ -121,6 +137,15 @@ class EntryController extends Controller
             ->route($planned ? 'pending' : 'board')
             ->with('highlight', $entry->id)
             ->with('status', $planned ? "Scheduled {$entry->hrw_ref}." : "Opened {$entry->hrw_ref}.");
+    }
+
+    private function duplicateSubmission(Request $request, Entry $entry)
+    {
+        if ($request->expectsJson()) return response()->json($entry, 200);
+
+        return redirect()->route($entry->status === 'pending' ? 'pending' : 'board')
+            ->with('highlight', $entry->id)
+            ->with('status', "{$entry->hrw_ref} was already recorded; no duplicate created.");
     }
 
     public function start(Request $request, Entry $entry)

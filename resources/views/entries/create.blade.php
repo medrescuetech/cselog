@@ -9,6 +9,7 @@
 @section('content')
 <form method="post" action="{{ route('entries.store') }}" class="max-w-xl mx-auto space-y-5" x-data="logForm(@js($workTypes->map(fn ($t) => ['id' => $t->id, 'name' => $t->name, 'is_other' => $t->is_other, 'requires_note' => $t->requires_note, 'notes_prompt' => $t->notes_prompt])->values()))" x-init="init()">
   @csrf
+  <input type="hidden" name="submission_key" value="{{ old('submission_key', (string) \Illuminate\Support\Str::uuid()) }}">
   <div class="flex items-baseline justify-between">
     <h1 class="text-2xl font-bold">Log high risk work</h1>
     <div class="text-right">

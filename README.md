@@ -12,6 +12,7 @@ HWRT is a web application for logging, scheduling, monitoring and reporting high
 - Open Board with explicit headers, elapsed-time highlighting and HRW references.
 - Advance scheduling as **Pending** with planned start times in **Australia/Perth**.
 - Pending work appears in a dedicated list and on the Board on its planned Perth calendar day.
+- Repeated Log work form submissions with the same key return the original HRW record.
 - Explicit **Start** action records actual commencement time/user.
 - Configurable high risk work types, including **Other**, per-type Notes prompts and Notes-required rules.
 - Admin-managed additional activity/hazard tags for jobs that span more than one category.

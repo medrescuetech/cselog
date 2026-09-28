@@ -206,4 +206,20 @@ class LocationAndCustomReportsTest extends TestCase
         ])->assertOk()->assertSee('Name or code already exists');
         $this->assertDatabaseCount('locations', 1);
     }
+
+    public function test_repeating_the_same_submission_key_does_not_create_a_second_job(): void
+    {
+        $operator = User::factory()->create(['role' => 'user']);
+        $type = WorkType::create(['name' => 'Hot Work', 'colour' => '#123456', 'active' => true]);
+        $payload = [
+            'submission_key' => 'bd9293ba-495b-4298-91f0-e7d6fceaba84',
+            'work_type_id' => $type->id, 'location_label' => 'Wharf',
+            'easting' => 476000, 'northing' => 7718000,
+        ];
+        $this->actingAs($operator)->post('/log', $payload)->assertRedirect('/board');
+        $this->actingAs($operator)->post('/log', $payload)->assertRedirect('/board')
+            ->assertSessionHas('status', 'HRW-000001 was already recorded; no duplicate created.');
+        $this->assertDatabaseCount('entries', 1);
+        $this->assertDatabaseCount('entry_events', 1);
+    }
 }
