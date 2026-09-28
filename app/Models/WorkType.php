@@ -8,7 +8,12 @@ class WorkType extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['is_default' => 'bool', 'requires_note' => 'bool', 'active' => 'bool'];
+    protected $casts = [
+        'is_default' => 'bool',
+        'requires_note' => 'bool',
+        'is_other' => 'bool',
+        'active' => 'bool',
+    ];
 
     public function scopeActive($q)
     {

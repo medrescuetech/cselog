@@ -1,0 +1,85 @@
+@extends('layouts.app')
+@section('title', 'Settings · Locations')
+
+@section('content')
+<div class="space-y-5">
+  <div class="flex flex-wrap items-end gap-3">
+    <div>
+      <h1 class="text-2xl font-bold">Settings · Locations</h1>
+      <p class="text-sm text-slate-400 mt-1">Create and maintain reusable locations, review dropped pins and attach private PDFs.</p>
+    </div>
+    <div class="flex-1"></div>
+    <a href="{{ route('settings.locations.create') }}" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold">+ Add location</a>
+    <a href="{{ route('settings.locations.import') }}" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2 text-sm">Import CSV</a>
+    <a href="{{ route('settings.index') }}" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-2 text-sm">Back to Settings</a>
+  </div>
+
+  <form method="get" class="flex gap-2 max-w-xl">
+    <input type="search" name="q" value="{{ $q }}" placeholder="Search locations…" class="flex-1 rounded-lg bg-slate-800 border border-slate-700 px-3 py-2">
+    <label class="flex items-center gap-1.5 text-sm text-slate-300">
+      <input type="checkbox" name="unverified" value="1" @checked($unverified) class="rounded"> Unverified only
+    </label>
+    <button class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2">Search</button>
+  </form>
+
+  <div class="space-y-3">
+    @foreach ($locations as $location)
+      <div class="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
+        <div class="grid gap-3 md:grid-cols-[1fr_auto] items-start">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-lg">{{ $location->name }}</span>
+              @if ($location->status === 'archived') <span class="text-xs text-slate-400">archived</span> @endif
+              @if ($location->verified)
+                <span class="text-[10px] uppercase text-emerald-400">verified</span>
+              @else
+                <span class="text-[10px] uppercase text-amber-400">unverified</span>
+              @endif
+            </div>
+            <div class="text-xs text-slate-500">
+              {{ $location->area?->name ?? 'No area' }} ·
+              E {{ number_format($location->easting, 1) }} N {{ number_format($location->northing, 1) }} ·
+              used {{ $location->usage_count }}×
+            </div>
+            <a href="{{ route('settings.locations.edit', $location) }}" class="inline-block mt-2 rounded bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-sm">Edit name / pin / aliases</a>
+            <form method="post" action="{{ route('settings.locations.verify', $location) }}" class="mt-2">
+              @csrf @method('PATCH')
+              <input type="hidden" name="verified" value="{{ $location->verified ? 0 : 1 }}">
+              @if ($location->verified)
+                <button class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-sm">Mark unverified</button>
+              @else
+                <button class="rounded bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm font-semibold">Verify location</button>
+              @endif
+            </form>
+
+            @if ($location->document_path)
+              <div class="mt-3 rounded-lg border border-emerald-800 bg-emerald-950/30 p-3">
+                <div class="text-sm font-medium">{{ $location->document_name }}</div>
+                <div class="text-xs text-slate-500">
+                  Uploaded {{ $location->document_uploaded_at?->format('d M Y H:i') ?? '—' }}
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <a href="{{ route('locations.document', $location) }}" target="_blank" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-sm">Open / download PDF</a>
+                  <form method="post" action="{{ route('settings.locations.document.remove', $location) }}" onsubmit="return confirm('Remove this PDF?');">
+                    @csrf @method('DELETE')
+                    <button class="rounded bg-red-800 hover:bg-red-700 px-3 py-1.5 text-sm">Remove</button>
+                  </form>
+                </div>
+              </div>
+            @endif
+          </div>
+
+          <form method="post" action="{{ route('settings.locations.document.upload', $location) }}" enctype="multipart/form-data" class="min-w-[260px]">
+            @csrf
+            <label class="block text-xs text-slate-400 mb-1">{{ $location->document_path ? 'Replace PDF' : 'Attach PDF' }}</label>
+            <input type="file" name="document" accept="application/pdf" required class="block w-full text-sm mb-2">
+            <button class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-2 text-sm font-semibold">Upload</button>
+          </form>
+        </div>
+      </div>
+    @endforeach
+  </div>
+
+  <div>{{ $locations->links() }}</div>
+</div>
+@endsection

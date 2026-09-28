@@ -1,250 +1,194 @@
-# CSEM — Confined Space Entry Monitor
+# HWRT — High Risk Work Tracker
 
-A web-based log and live map for tracking open work locations on a site (primarily confined
-space entries) that are called in by radio.
+HWRT is a web application for logging, scheduling, monitoring and reporting high risk work on site.
 
-**Status:** Phase 0–2 working locally — Laravel app (login/roles, quick log, open board,
-close-out, history + CSV, live map with MGA50 pins and pin-drop location creation) on top of
-the reusable `sitemap/` package. Not yet deployed.
+**Current development line:** V2  
+**Version source:** `VERSION`  
+**Authoritative V2 specification:** [docs/V2.md](docs/V2.md)
 
-## Run it locally
+## Current V2 capabilities
+
+- User/Admin authentication with username sign-in and optional email.
+- Open Board with explicit headers, elapsed-time highlighting and HRW references.
+- Advance scheduling as **Pending** with planned start times in **Australia/Perth**.
+- Pending work appears in a dedicated list and on the Board on its planned Perth calendar day.
+- Repeated Log work form submissions with the same key return the original HRW record.
+- Explicit **Start** action records actual commencement time/user.
+- Configurable high risk work types, including **Other**, per-type Notes prompts and Notes-required rules.
+- Admin-managed additional activity/hazard tags for jobs that span more than one category.
+- Permanent identifiers such as `HRW-000001`.
+- Live local site map with MGA Zone 50 coordinates and open-work pins.
+- Configurable manual/automatic refresh of the existing local map package from public ArcGIS sources.
+- Runtime map requests use local `/sitemap/...` files; HRW/user/job data is not sent to ArcGIS.
+- Optional private PDF attachment for each catalogue location, linked from map pin details.
+- Admin pre-storage, map/coordinate editing, archiving and audit history for saved locations; prior job snapshots remain intact.
+- Duplicate-location merge and preview-first MGA50 CSV import, without rewriting historical job positions.
+- Manual key-landmark management with map-click coordinate selection.
+- Recent Logbook and filtered Reports with CSV export.
+- Custom report builder with date meaning, location/type/area/tag filters, grouping and selected CSV columns; printable shift handover view.
+- Dark/light appearance setting.
+- Local diagnostics at `/error`.
+- Application version displayed in the bottom-left of the authenticated UI.
+- Git-based update helper with SQLite backup and a runtime map copy outside the Git working tree.
+
+## Stack
+
+- PHP 8.3
+- Laravel 13
+- SQLite for development/review
+- MariaDB/MySQL recommended for production multi-user use
+- Blade + Alpine
+- Tailwind
+- Leaflet using `L.CRS.Simple`
+- Site coordinates: GDA94 / MGA Zone 50 (EPSG:28350)
+
+## Local development
 
 ```bash
 composer install
-cp .env.example .env && php artisan key:generate      # SQLite by default
-php artisan migrate --seed                            # work types + admin user
-php artisan sitemap:import                            # areas/landmarks from sitemap/features
-php artisan serve                                     # http://localhost:8000
+cp .env.example .env
+touch database/database.sqlite
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan sitemap:import
+php artisan serve
 ```
 
-Default admin is `admin@example.com` / `changeme` — override with `CSEM_ADMIN_EMAIL` /
-`CSEM_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
-`scripts/smoke.sh` exercises every route against a running dev server.
+Default development account from `.env.example`:
 
-Stack as built: PHP 8.3 / Laravel 13, Blade + Alpine + Tailwind (CDN for now), Leaflet
-`CRS.Simple` in MGA Zone 50 metres. The cPanel host must therefore offer `ea-php83`; if it
-only has 8.2 we downgrade to Laravel 11 (small change — nothing framework-specific is used).
-
-
----
-
-## 1. The problem
-
-People radio in to say a confined space (or other work) is open at a particular place on site.
-Today that is tracked informally. What's needed:
-
-- Log the call in a few seconds: time (auto), location, work type, notes.
-- Know at a glance what is **currently open** and for how long.
-- See those open jobs as **pins on our own site map** (survey/GIS image), optionally with a
-  satellite layer underneath.
-- Keep a **historical record** for compliance/review.
-- Build up a **reusable location catalogue** so the common places are one tap next time — while
-  accepting that locations change constantly, new ones appear, old ones disappear.
-- Draw **landmarks** and **boundaries/areas** on the map image as reference overlays.
-
-## 2. The core workflow
-
-```
-Radio call
-   │
-   ▼
-[Quick log form]  time = now (editable)   work type = Confined Space Entry (default, list editable)
-   │              location = search/select existing  ── or ── "New location…"
-   │              notes = free text
-   ▼
-Submit
-   │
-   ├── existing location selected ──────────────► entry is open, pin appears on map
-   │
-   └── new location ──► [Map view] user drops a pin on the site image
-                              │
-                              ▼
-                     "Save this location for next time?"
-                              │
-                    ┌─────────┴─────────┐
-                   Yes                  No
-                    │                    │
-          name it + save to         pin stored on this
-          the catalogue             entry only (ad-hoc)
-                    │                    │
-                    └─────────┬──────────┘
-                              ▼
-                      Open board + live map
-                              │
-                        (work finishes)
-                              ▼
-                      Close entry → time closed, closed by, optional notes
-                              ▼
-                           History
+```text
+username: admin
+password: changeme
 ```
 
-## 3. What it does (feature set)
+Change this before any real deployment.
 
-### Logging
-- One-screen entry form; timestamp captured server-side on submit (editable with an audit note
-  if the call was logged late).
-- Work type from a **customisable list** (default: *Confined Space Entry*; others e.g. Hot Work,
-  Working at Heights, Excavation, Isolation, Other + free text).
-- Notes, caller/permit number, crew/contractor (optional fields — configurable).
-- Location by search-as-you-type over the catalogue, ordered by most-recently/most-frequently
-  used, or a brand-new pin.
+## Production Prerequisites & System Requirements
 
-### Open board
-- Live list of open locations: place name, type, opened at, **elapsed time**, notes, who logged it.
-- Configurable duration thresholds → amber/red highlight for long-running entries (e.g. >2 h,
-  >4 h) so nothing is forgotten on the board.
-- One-click close, with confirmation and optional close note.
+1. **PHP**: PHP 8.3 with extensions `mbstring`, `pdo_sqlite` or `pdo_mysql`, `fileinfo`.
+2. **cPanel Cron Scheduler**: Run Laravel's scheduler every minute in cPanel Cron Jobs:
+   ```bash
+   * * * * * /usr/local/bin/ea-php83 /home/USER/csem-review/artisan schedule:run >/dev/null 2>&1
+   ```
+3. **Python & Pillow (for background map refresh)**:
+   - Python 3.8+ (`python3`).
+   - `Pillow` image library installed (`pip install Pillow` or system package `python3-pillow`).
+   - Binary path configurable in **Settings → Map** (`map.python` setting).
+4. **Network Access**: Outbound HTTPS (port 443) to `https://enveng.maps.arcgis.com` and `https://services-ap1.arcgis.com` for background map updates. No outbound traffic is required for normal application/user operation.
 
-### Live map
-- Our own image as the base map (survey plan / GIS export / PDF-derived raster).
-- Open entries as pins, colour-coded by work type, red/amber by age. Click a pin → details +
-  close button.
-- Optional satellite/aerial basemap under the image when the image is georeferenced, with an
-  opacity slider.
-- Landmark markers and boundary/area polygons drawn as overlays (see §5).
-- Auto-refresh (polling) so a wall-mounted screen stays current.
+## Deployment Options
 
-### History
-- Filter by date range, site, area, location, work type, status, person.
-- CSV/Excel export; printable shift report.
-- Every create/update/close is recorded in an immutable audit log.
+### Option 1: SSH Automated Update (Recommended)
 
-### Location catalogue (built to churn)
-- Locations are created on the fly from a dropped pin and promoted to the catalogue on "Yes".
-- **Archive, don't delete.** Archived locations stay attached to their history but drop out of
-  the picker. A "merge into…" action folds duplicates together and keeps an alias.
-- Aliases: "Pit 4" = "No. 4 Sump" — both find the same location.
-- New locations are flagged *unverified* until an admin confirms them; a nightly/weekly review
-  list shows unverified, unused and duplicate-looking entries.
-- Locations can be moved (pin corrected) — the change is versioned so old entries keep the
-  position they were logged at.
-- Bulk import/export (CSV) for when a new survey drops.
+When SSH access is available:
 
-### Admin
-- Sites, map images/versions, georeferencing control points.
-- Work types (add/rename/reorder/retire).
-- Landmarks and areas editor (draw, name, style).
-- Users and roles: *Logger* (create/close entries), *Supervisor* (edit history, manage
-  locations), *Admin* (everything), *Viewer* (read-only wallboard).
-
-## 4. Recommended stack
-
-Chosen to match the constraint: **cPanel shared hosting, deployed from GitHub**.
-
-| Layer | Choice | Why |
-|---|---|---|
-| Runtime | PHP 8.2+ | The one thing cPanel always runs well; no Node daemon/Passenger fragility. |
-| Framework | Laravel 11 (+ Breeze auth) | Batteries included: auth, migrations, validation, queue, scheduler, CSV export. Deploys fine on cPanel with the docroot pointed at `public/`. |
-| DB | MySQL 8 / MariaDB 10.6+ | Included with cPanel. Spatial types available if wanted; not required. |
-| UI | Blade + Alpine.js + Tailwind (built assets committed or built in deploy) | No SPA build server needed; fast on a phone over patchy site wifi/4G. |
-| Map | **Leaflet 1.9** | Handles both a plain image (`L.CRS.Simple` + `ImageOverlay`) and real geographic layers (satellite tiles + georeferenced overlay) — the same library covers both phases. |
-| Drawing | Leaflet-Geoman (or Leaflet.draw) | Landmarks, boundary polygons, freehand areas. |
-| Big images | `gdal2tiles` / `vips dzsave` pre-tiling, served as static tiles | A 200 MB survey raster can't be a single `ImageOverlay`; tiles keep mobile usable. |
-| Live updates | Polling (10–20 s) + ETag | Websockets are unreliable on shared cPanel; polling is enough for this volume. |
-
-**Deliberately not chosen:** Next.js/Node on cPanel (Passenger apps break on shared hosts and on
-PHP-version changes), a no-code platform (can't do the custom image map + pin save flow), and
-PostGIS (not available on standard cPanel).
-
-See [`docs/02-architecture.md`](docs/02-architecture.md) for detail and
-[`docs/08-deployment-cpanel.md`](docs/08-deployment-cpanel.md) for the cPanel + GitHub deploy
-pipeline (`.cpanel.yml`, Git Version Control, cron, `.env` handling).
-
-## 5. Maps, pins and georeferencing (the interesting bit)
-
-There are two ways to run the map, and the data model supports both at once:
-
-1. **Image-only (Phase 1).** `L.CRS.Simple`. A pin is stored as `(x, y)` in image pixel space.
-   Works with any picture — a scanned plan, a screenshot, a PDF export. No GIS data needed.
-2. **Georeferenced (Phase 2).** The map image is pinned to the real world with 2+ control points
-   (or supplied as a GeoTIFF / known bounds). Leaflet then shows a satellite/aerial basemap under
-   a semi-transparent overlay of your plan, and a pin has a real `(lat, lng)`.
-
-Every pin is stored with `x, y` **and**, when a georeference exists, `lat, lng` derived from it.
-That means: start today with a plain image, add the georeference later, and history retro-fits
-instead of being stranded in pixel coordinates.
-
-Landmarks (points) and boundaries/areas (polygons) are stored as GeoJSON in the same coordinate
-space as the map they belong to, so they can be toggled as layers, used to label a pin ("this pin
-is inside *Tank Farm B*"), and reused when the base image is replaced with a newer survey.
-
-Full detail: [`docs/04-map-and-georeferencing.md`](docs/04-map-and-georeferencing.md).
-
-**Limited mapping data is not a blocker.** GMC has flagged that little map data exists — see
-[`docs/09-minimum-mapping-data.md`](docs/09-minimum-mapping-data.md) for the tiered plan. In
-short: a photo of a plan on the wall, or even satellite imagery with hand-drawn boundaries, is
-enough to run the whole thing; the site map is then built up by drawing areas/landmarks and by
-the location catalogue accumulating from normal use.
-
-## 6. Data model (sketch)
-
-```
-sites ──< maps ──< map_versions (image/tiles, georeference control points)
-  │        │
-  │        ├──< landmarks   (point geojson, name, icon)
-  │        └──< areas       (polygon geojson, name, colour)  ── boundaries
-  │
-  ├──< locations ──< location_positions (versioned x/y + lat/lng, effective_from)
-  │        │          aliases, status(active|archived), verified, merged_into_id, usage_count
-  │        │
-  └──< entries  (location_id nullable + ad-hoc x/y, work_type_id, notes, status,
-        │        opened_at, opened_by, closed_at, closed_by)
-        └──< entry_events (audit: created/updated/closed, actor, payload, at)
-
-work_types (name, is_default, sort_order, active)
-users / roles
+```bash
+cd ~/csem-review
+./scripts/update-hwrt.sh            # Update to latest on current branch
+./scripts/update-hwrt.sh v2.0.1     # Update to specific release tag
 ```
 
-Full DDL sketch: [`docs/03-data-model.md`](docs/03-data-model.md).
+The `update-hwrt.sh` helper automatically:
+1. Backs up SQLite database (if used);
+2. Seeds and maintains the decoupled runtime map package in `storage/app/hwrt-sitemap`;
+3. Sets Laravel to maintenance mode (`artisan down`);
+4. Fetches Git changes and checks out the requested release/branch;
+5. Installs Composer dependencies (`composer install --no-dev --optimize-autoloader`);
+6. Runs database migrations (`php artisan migrate --force`);
+7. Bootstraps rotatable admin credentials (`php artisan hwrt:bootstrap-admin`);
+8. Imports local runtime map data (`php artisan sitemap:import`);
+9. Optimizes application caches (`php artisan optimize`);
+10. Restores online status (`artisan up`).
 
-## 7. Delivery plan
+### Option 2: cPanel Git Version Control (`.cpanel.yml`)
 
-| Phase | Scope | Rough effort |
-|---|---|---|
-| 0 | Repo, hosting, cPanel↔GitHub deploy, Laravel skeleton, auth | ~0.5 session |
-| 1 | Log form, work types, open board, close-out, history + CSV | ~1 session |
-| 2 | Image map (CRS.Simple), pin drop, "save this location?", catalogue picker | ~1 session |
-| 3 | Landmarks + boundaries editor, layer toggles, pin-in-area labelling | ~0.5–1 session |
-| 4 | Georeferencing + satellite basemap, tiled large images *(optional — see docs/09)* | ~1 session |
-| 5 | Wallboard mode, overdue alerts (email/SMS), reports, offline-tolerant form | ~1 session |
+When using cPanel's Git interface without direct SSH shell access:
+1. Push release commits to GitHub.
+2. In cPanel → **Git Version Control**, trigger **Update from Remote**.
+3. cPanel executes deployment tasks defined in `.cpanel.yml`:
+   - Syncs code to the application directory;
+   - Runs `composer install --no-dev --optimize-autoloader`;
+   - Executes `php artisan migrate --force`;
+   - Runs `php artisan optimize`.
 
-**Superseded:** with real map data now in hand, the current plan is
-[`docs/11-build-plan.md`](docs/11-build-plan.md) (two map layers on one MGA50 coordinate system,
-imagery georeferenced from world files, phases re-cut).
+### Option 3: Manual File Updating (FTP / File Manager)
 
-("Session" = one continuous Devin working session, not a person-week.)
+If updating files manually via SFTP or cPanel File Manager:
+1. Upload updated application files **without** overwriting `.env`, `database/database.sqlite`, or `storage/`.
+2. Run database migrations: `php artisan migrate --force`
+3. Re-import map data if modified: `php artisan sitemap:import`
+4. Clear and optimize caches: `php artisan optimize`
 
-## 8. Open questions
+### Node Assets & Frontend Changes
 
-Answers to these change the build; see [`docs/07-open-questions.md`](docs/07-open-questions.md)
-for the full list. The ones that matter most:
+If frontend JavaScript or CSS assets are updated:
+- Run asset compilation locally or in CI: `npm ci && npm run build`
+- Node is **not** required on the cPanel production server. Compiled assets are served directly from `public/css/app.css` and local vendor directories (`public/vendor/leaflet/`, `public/vendor/alpinejs/`).
 
-1. How many sites, and roughly how many open entries at once / per day?
-2. What map data actually exists — image only, PDF, shapefile/DWG, GeoTIFF, an ArcGIS/QGIS export?
-   **Answered:** SCJV site map PDF + public ArcGIS Online web map (Nearmap tiles, plot plans,
-   lease boundaries) — see `docs/10-site-map-sources.md`. `docs/09` is now the fallback plan.
-3. Who logs the call: one controller at a desk, or multiple people on phones in the field?
-4. Does this need to feed or replace an existing permit-to-work system?
-5. Any regulatory retention/audit requirement on the records (and for how long)?
-6. Is login per person (accountability) or a shared control-room account?
+## Future Release & Rollout Strategy
 
-## Repo layout
+1. **Version Tagging**: Every official release is tagged with semantic versioning (`v2.0.0`, `v2.0.1`, `v2.1.0`).
+2. **Database Backups**: Always perform a database backup (`mysqldump` for MySQL/MariaDB or SQLite copy) before applying updates.
+3. **Decoupled Sitemap**: Runtime map updates are stored under `storage/app/hwrt-sitemap/` with atomic symlink switching, keeping Git history clean.
+4. **Staging Environment**: Validate updates on a staging subdomain (`staging.example.com`) before production deployment.
+5. **Rollback Strategy**:
+   - Code rollback: `git checkout <previous-tag>`
+   - Database rollback: restore pre-update database backup.
+   - Sitemap rollback: `MapPackagePublisher` automatically restores the previous map package if a refresh or import fails.
 
+## Map refresh
+
+The installed map remains local during normal HWRT operation.
+
+Admins can use **Settings → Map** to select:
+
+- Manual only
+- Daily
+- Weekly
+- Monthly
+
+or request a refresh immediately.
+
+The scheduler checks:
+
+```bash
+php artisan hwrt:map-refresh --scheduled
 ```
-README.md                      ← this document
-docs/01-requirements.md        requirements captured from the brief, with assumptions marked
-docs/02-architecture.md        stack, components, alternatives considered
-docs/03-data-model.md          tables, DDL sketch, key design decisions
-docs/04-map-and-georeferencing.md   image maps, tiling, control points, overlays
-docs/05-workflows-and-ui.md    screen-by-screen flows and wireframe notes
-docs/06-location-lifecycle.md  how the changing location catalogue is kept sane
-docs/07-open-questions.md      what we need from GMC to finalise
-docs/08-deployment-cpanel.md   cPanel + GitHub deploy pipeline
-docs/09-minimum-mapping-data.md how to build this with little or no map data
-docs/10-site-map-sources.md    the map sources actually received (PDF + ArcGIS Online)
-docs/11-build-plan.md          the consolidated build plan (current)
-sitemap/                       standalone, reusable site map package: imagery, transparent plot-plan
-                               layers, GMC prints, boundaries (all MGA50) + manifest + Leaflet viewer
-sitemap/tools/                 scripts that pull/render/refresh the package from the PR25 ArcGIS map
-docs/NOTES.md                  running notes, ideas, things deliberately excluded
+
+The production cron should run Laravel's scheduler every minute:
+
+```bash
+cd /home/akgmxkpo/csem-review && /usr/local/bin/php artisan schedule:run >/dev/null 2>&1
 ```
+
+The refresh process:
+
+- performs anonymous download-only requests to the configured public ArcGIS sources;
+- uses the current installed Site C/F footprint as the bounding box;
+- stages downloads before replacement;
+- leaves the current map live if refresh fails;
+- refreshes imagery and feature data;
+- retains current engineering-plan overlays unless those are explicitly updated through Git;
+- re-imports local areas/landmarks;
+- records last attempt/success/error in Settings.
+
+It does **not** upload HRW records, users, notes, PDFs, permits or application database content to ArcGIS.
+
+## Documents
+
+Location PDFs are stored in private Laravel storage, not under the public web root. Authenticated users access them through a protected application route.
+
+## Testing
+
+```bash
+php artisan test
+npm install
+npx playwright install chromium
+npm run test:browser
+```
+
+Browser acceptance verifies that the real site imagery visibly renders and the Control Room coordinate remains aligned between imagery and plan layers.
+
+## V2 design
+
+See [docs/V2.md](docs/V2.md) for the full V2 scope, database plan, settings design, map/privacy approach, reporting model and release criteria.

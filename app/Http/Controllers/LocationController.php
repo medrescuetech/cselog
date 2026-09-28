@@ -14,7 +14,8 @@ class LocationController extends Controller
         $q = trim((string) $request->query('q', ''));
         $rows = Location::active()
             ->when($q !== '', fn ($b) => $b->where(fn ($w) => $w
-                ->where('name', 'like', "%{$q}%")->orWhere('code', 'like', "%{$q}%")))
+                ->where('name', 'like', "%{$q}%")->orWhere('code', 'like', "%{$q}%")
+                ->orWhere('aliases', 'like', "%{$q}%")))
             ->orderByDesc('last_used_at')->orderByDesc('usage_count')->orderBy('name')
             ->limit($q === '' ? 8 : 25)
             ->with('area:id,name')
@@ -30,7 +31,7 @@ class LocationController extends Controller
     public function nearby(Request $request)
     {
         $d = $request->validate(['easting' => 'required|numeric', 'northing' => 'required|numeric']);
-        $near = Location::near($d['easting'], $d['northing'], config('csem.duplicate_radius_m'));
+        $near = Location::near($d['easting'], $d['northing'], config('hwrt.duplicate_radius_m'));
         $area = Area::containing($d['easting'], $d['northing']);
 
         return response()->json([
@@ -54,6 +55,7 @@ class LocationController extends Controller
             'verified' => false,
             'created_by' => $request->user()->id,
         ]);
+        $loc->recordRevision('created');
 
         return response()->json($loc->load('area:id,name'), 201);
     }

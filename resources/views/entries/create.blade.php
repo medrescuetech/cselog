@@ -1,19 +1,21 @@
 @extends('layouts.app')
-@section('title', 'Log entry')
+@section('title', 'Log high risk work')
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/csem-map.js"></script>
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
+<script src="/js/hwrt-map.js"></script>
 @endpush
 
 @section('content')
-<form method="post" action="{{ route('entries.store') }}" class="max-w-xl mx-auto space-y-5" x-data="logForm()" x-init="init()">
+<form method="post" action="{{ route('entries.store') }}" class="max-w-xl mx-auto space-y-5" x-data="logForm(@js($workTypes->map(fn ($t) => ['id' => $t->id, 'name' => $t->name, 'is_other' => $t->is_other, 'requires_note' => $t->requires_note, 'notes_prompt' => $t->notes_prompt])->values()))" x-init="init()">
   @csrf
+  <input type="hidden" name="submission_key" value="{{ old('submission_key', (string) \Illuminate\Support\Str::uuid()) }}">
   <div class="flex items-baseline justify-between">
-    <h1 class="text-2xl font-bold">Log entry</h1>
-    <button type="button" @click="late = !late" class="font-mono text-2xl text-slate-300 hover:text-white" title="Tap to log a late entry">
-      <span x-text="clock"></span> <span class="text-sm text-slate-500" x-show="!late">now</span>
-    </button>
+    <h1 class="text-2xl font-bold">Log high risk work</h1>
+    <div class="text-right">
+      <div class="font-mono text-2xl text-slate-300"><span x-text="clock"></span></div>
+      <div class="text-[11px] text-slate-500">Australia/Perth</div>
+    </div>
   </div>
 
   @if ($errors->any())
@@ -22,18 +24,54 @@
     </div>
   @endif
 
+  <div class="grid gap-2 md:grid-cols-2">
+    <label class="flex items-center gap-3 rounded-lg border px-3 py-3 text-sm font-semibold"
+           :class="planned ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'">
+      <input type="checkbox" x-model="planned" @change="if (planned) late = false" class="h-5 w-5">
+      Schedule in advance
+    </label>
+    <label class="flex items-center gap-3 rounded-lg border px-3 py-3 text-sm font-semibold"
+           :class="late ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'">
+      <input type="checkbox" x-model="late" @change="if (late) planned = false" class="h-5 w-5">
+      Log a late start
+    </label>
+  </div>
+
+  <div x-show="planned" x-cloak class="bg-amber-950/35 border border-amber-800 rounded-lg p-3 space-y-2">
+    <label class="block text-sm text-slate-300">Planned start — Australia/Perth
+      <input type="datetime-local" name="planned_start_at" x-model="plannedStart" :disabled="!planned" required
+             class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
+    <p class="text-xs text-slate-500">This job will be created as Pending, appear in the Pending list immediately, and appear on the Open Board on its planned Perth calendar day. Press Start when work actually begins.</p>
+  </div>
+
   <div x-show="late" x-cloak class="bg-slate-800 rounded-lg p-3 space-y-2">
-    <label class="block text-sm text-slate-300">Logged late — actual time was
+    <label class="block text-sm text-slate-300">Logged late — actual start time (Australia/Perth)
       <input type="datetime-local" name="opened_at" x-model="openedAt" :disabled="!late" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
     <input name="late_reason" placeholder="Reason (e.g. radio traffic)" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
   </div>
 
-  <label class="block"><span class="text-sm text-slate-300">Type</span>
-    <select name="work_type_id" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3 text-lg">
+  <label class="block"><span class="text-sm text-slate-300">High risk work type</span>
+    <select name="work_type_id" x-model.number="workTypeId" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3 text-lg">
       @foreach ($workTypes as $t)
         <option value="{{ $t->id }}" @selected(old('work_type_id', $defaultType?->id) == $t->id)>{{ $t->name }}</option>
       @endforeach
     </select></label>
+
+  <label class="block" x-show="selectedType()?.is_other" x-cloak>
+    <span class="text-sm text-slate-300">Describe the high risk work</span>
+    <input name="other_description" value="{{ old('other_description') }}" :required="selectedType()?.is_other"
+           class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3"
+           placeholder="e.g. pressure testing / lifting operation">
+  </label>
+
+  @if ($workTags->isNotEmpty())
+    <fieldset class="rounded-lg border border-slate-700 bg-slate-800/70 p-3">
+      <legend class="px-2 text-sm text-slate-300">Additional activities / hazards (optional)</legend>
+      <div class="flex flex-wrap gap-3">@foreach ($workTags as $tag)
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="work_tags[]" value="{{ $tag->id }}" @checked(in_array($tag->id, old('work_tags', [])))> {{ $tag->name }}</label>
+      @endforeach</div>
+    </fieldset>
+  @endif
 
   {{-- Location picker --}}
   <div>
@@ -62,7 +100,6 @@
           <button type="button" @click="picked = l" class="text-left rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-3 flex items-center gap-2">
             <span class="flex-1"><span class="font-medium" x-text="l.name"></span>
               <span class="text-xs text-slate-400 ml-2" x-text="l.area || ''"></span></span>
-            <span x-show="!l.verified" class="text-[10px] uppercase text-amber-400">unverified</span>
           </button>
         </template>
         <div x-show="q && !results.length" class="text-slate-400 text-sm px-1">No match — drop a pin below.</div>
@@ -71,8 +108,12 @@
     </div>
   </div>
 
-  <label class="block"><span class="text-sm text-slate-300">Notes</span>
-    <textarea name="notes" rows="2" placeholder="2 crew, gas tested…" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3">{{ old('notes') }}</textarea></label>
+  <label class="block"><span class="text-sm text-slate-300">Notes <span x-show="selectedType()?.requires_note" class="text-amber-400">(required)</span></span>
+    <textarea name="notes" rows="3" :required="selectedType()?.requires_note"
+              :placeholder="selectedType()?.notes_prompt || 'High risk work notes…'"
+              class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3">{{ old('notes') }}</textarea>
+    <div class="mt-1 text-xs text-slate-500" x-show="selectedType()?.notes_prompt" x-text="selectedType()?.notes_prompt"></div>
+  </label>
   <div class="grid grid-cols-2 gap-3">
     <label class="block"><span class="text-sm text-slate-300">Permit no.</span>
       <input name="permit_no" value="{{ old('permit_no') }}" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3"></label>
@@ -80,7 +121,7 @@
       <input name="reported_by" value="{{ old('reported_by') }}" placeholder="Ch.2 – Dave" class="mt-1 w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-3"></label>
   </div>
 
-  <button :disabled="!picked && !adhoc.e" class="w-full rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 py-4 text-xl font-bold">SUBMIT</button>
+  <button :disabled="!picked && !adhoc.e" class="w-full rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 py-4 text-xl font-bold">SUBMIT HIGH RISK WORK</button>
 
   {{-- S2: pin drop --}}
   <div x-show="pinOpen" x-cloak class="fixed inset-0 z-50 bg-slate-950 flex flex-col">
@@ -112,13 +153,28 @@
 
 @push('scripts')
 <script>
-function logForm() {
+function logForm(types) {
   return {
-    clock: '', late: false, openedAt: '',
+    types,
+    workTypeId: {{ (int) old('work_type_id', $defaultType?->id ?? 0) }},
+    selectedType() { return this.types.find(t => Number(t.id) === Number(this.workTypeId)) || null; },
+    clock: '', late: false, planned: false, openedAt: '', plannedStart: '',
     q: '', results: [], picked: null, adhoc: {},
     pinOpen: false, pin: { e: null, n: null, name: '', area: null, nearby: [], error: '' }, mapObj: null, marker: null,
     init() {
-      const tick = () => { const d = new Date(); this.clock = d.toTimeString().slice(0, 5); if (!this.late) this.openedAt = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); };
+      const fmtPerth = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Perth', hour: '2-digit', minute: '2-digit', hour12: false });
+      const perthLocalValue = d => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Australia/Perth', year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).formatToParts(d).reduce((a, p) => (a[p.type] = p.value, a), {});
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+      };
+      const tick = () => {
+        const d = new Date();
+        this.clock = fmtPerth.format(d);
+        if (!this.late) this.openedAt = perthLocalValue(d);
+      };
       tick(); setInterval(tick, 1000);
       this.search();
     },
@@ -127,7 +183,7 @@ function logForm() {
       this.pinOpen = true; this.pin = { e: null, n: null, name: this.q, area: null, nearby: [], error: '' };
       await this.$nextTick();
       if (!this.mapObj) {
-        this.mapObj = await CsemMap.create('pinmap', { skipPrints: true });
+        this.mapObj = await HwrtMap.create('pinmap', { skipPrints: true });
         this.mapObj.map.on('click', ev => this.place(this.mapObj.fromLL(ev.latlng)));
       } else { this.mapObj.map.invalidateSize(); }
       if (this.marker) { this.marker.remove(); this.marker = null; }

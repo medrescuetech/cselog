@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Entry extends Model
@@ -12,8 +13,19 @@ class Entry extends Model
 
     protected $casts = [
         'easting' => 'float', 'northing' => 'float',
-        'opened_at' => 'datetime', 'closed_at' => 'datetime',
+        'planned_start_at' => 'datetime', 'opened_at' => 'datetime', 'closed_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Entry $entry): void {
+            if (! $entry->hrw_ref) {
+                $entry->forceFill([
+                    'hrw_ref' => 'HRW-'.str_pad((string) $entry->id, 6, '0', STR_PAD_LEFT),
+                ])->saveQuietly();
+            }
+        });
+    }
 
     public function location(): BelongsTo
     {
@@ -45,6 +57,11 @@ class Entry extends Model
         return $this->hasMany(EntryEvent::class)->orderBy('occurred_at');
     }
 
+    public function workTags(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkTag::class, 'entry_work_tag');
+    }
+
     public function scopeOpen($q)
     {
         return $q->where('status', 'open')->orderBy('opened_at');
@@ -55,18 +72,18 @@ class Entry extends Model
         return (int) $this->opened_at->diffInSeconds($this->closed_at ?? now());
     }
 
-    /** none | amber | red, from config thresholds (hours). */
     public function ageBand(): string
     {
         if ($this->status !== 'open') {
             return 'none';
         }
+
         $h = $this->elapsedSeconds() / 3600;
-        if ($h >= config('csem.red_hours')) {
+        if ($h >= config('hwrt.red_hours')) {
             return 'red';
         }
 
-        return $h >= config('csem.amber_hours') ? 'amber' : 'none';
+        return $h >= config('hwrt.amber_hours') ? 'amber' : 'none';
     }
 
     public function log(string $event, ?array $changes = null): void

@@ -1,13 +1,26 @@
 const { test, expect } = require('@playwright/test');
 
+let adminPassword = process.env.HWRT_ADMIN_PASSWORD || 'admin';
+
 async function login(page) {
   await page.goto('/login');
-  await page.getByLabel('Email').fill('admin@example.com');
-  await page.getByLabel('Password').fill('changeme');
+  await page.getByLabel('Username or email').fill('admin');
+  await page.getByLabel('Password').fill(adminPassword);
   await Promise.all([
-    page.waitForURL('**/board'),
+    page.waitForURL(url => ['/board', '/password/change'].includes(url.pathname)),
     page.getByRole('button', { name: 'Sign in' }).click(),
   ]);
+
+  if (new URL(page.url()).pathname === '/password/change') {
+    adminPassword = 'HwrtBrowserPass123!';
+    await page.locator('[name="current_password"]').fill(process.env.HWRT_ADMIN_PASSWORD || 'admin');
+    await page.locator('[name="password"]').fill(adminPassword);
+    await page.locator('[name="password_confirmation"]').fill(adminPassword);
+    await Promise.all([
+      page.waitForURL('**/board'),
+      page.getByRole('button', { name: 'Update password' }).click(),
+    ]);
+  }
 }
 
 function localPath(response, path) {
@@ -56,7 +69,7 @@ test('map visibly renders current site imagery', async ({ page }, testInfo) => {
   }
 
   const map = page.locator('#map');
-  await expect(map).toHaveAttribute('data-csem-basemap', 'loaded', { timeout: 45_000 });
+  await expect(map).toHaveAttribute('data-hwrt-basemap', 'loaded', { timeout: 45_000 });
 
   const dimensions = await map.boundingBox();
   expect(dimensions).not.toBeNull();
@@ -85,7 +98,7 @@ test('map visibly renders current site imagery', async ({ page }, testInfo) => {
   expect(imageState.intersecting).toBeGreaterThan(0);
 
   const centre = await map.evaluate(el => {
-    const api = el._csemMapApi;
+    const api = el._hwrtMapApi;
     const c = api.map.getCenter();
     return { easting: c.lng, northing: -c.lat };
   });
@@ -123,10 +136,10 @@ test('Control Room pin stays aligned between imagery and plan', async ({ page },
   await page.getByRole('button', { name: /New location \(drop a pin\)/ }).click();
 
   const pinMap = page.locator('#pinmap');
-  await expect(pinMap).toHaveAttribute('data-csem-basemap', 'loaded', { timeout: 45_000 });
+  await expect(pinMap).toHaveAttribute('data-hwrt-basemap', 'loaded', { timeout: 45_000 });
 
   await pinMap.evaluate((el, landmark) => new Promise(resolve => {
-    const api = el._csemMapApi;
+    const api = el._hwrtMapApi;
     let resolved = false;
     const done = () => {
       if (resolved) return;
@@ -139,7 +152,7 @@ test('Control Room pin stays aligned between imagery and plan', async ({ page },
   }), controlRoom);
 
   const clickPoint = await pinMap.evaluate((el, landmark) => {
-    const api = el._csemMapApi;
+    const api = el._hwrtMapApi;
     const point = api.map.latLngToContainerPoint(
       api.toLL(Number(landmark.easting), Number(landmark.northing))
     );
@@ -164,13 +177,13 @@ test('Control Room pin stays aligned between imagery and plan', async ({ page },
 
   expect(areaAtPin.area?.name || '').toMatch(/control room/i);
 
-  await pinMap.evaluate(el => el._csemMapApi.setPlanOpacity(0));
+  await pinMap.evaluate(el => el._hwrtMapApi.setPlanOpacity(0));
   await page.waitForTimeout(250);
   const imageryMarker = await marker.boundingBox();
   expect(imageryMarker).not.toBeNull();
   await pinMap.screenshot({ path: testInfo.outputPath('map-pin-imagery.png') });
 
-  await pinMap.evaluate(el => el._csemMapApi.setPlanOpacity(1));
+  await pinMap.evaluate(el => el._hwrtMapApi.setPlanOpacity(1));
   await page.waitForTimeout(250);
   const planMarker = await marker.boundingBox();
   expect(planMarker).not.toBeNull();

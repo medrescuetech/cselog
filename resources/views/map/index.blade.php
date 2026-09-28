@@ -2,9 +2,9 @@
 @section('title', 'Map')
 @section('main-class', 'relative')
 @push('head')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/csem-map.js"></script>
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
+<script src="/js/hwrt-map.js"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }
   .leaflet-container { font: inherit; }
@@ -47,13 +47,13 @@
     if (!fatal) warningTimer = setTimeout(() => statusEl.classList.add('hidden'), 8000);
   }
 
-  mapEl.addEventListener('csem:warning', e => showNotice(e.detail.message, false));
-  mapEl.addEventListener('csem:error', e => showNotice(e.detail.message, true));
+  mapEl.addEventListener('hwrt:warning', e => showNotice(e.detail.message, false));
+  mapEl.addEventListener('hwrt:error', e => showNotice(e.detail.message, true));
 
   try {
     if (!window.L) throw new Error('Leaflet did not load. Check network/CDN access.');
 
-    const cm = await CsemMap.create('map', { collapsed: false });
+    const cm = await HwrtMap.create('map', { collapsed: false });
     const { map, pins, toLL, fromLL } = cm;
 
     document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
@@ -62,7 +62,7 @@
       document.getElementById('coords').textContent = `E ${E.toFixed(1)}  N ${N.toFixed(1)}  MGA50`;
     });
 
-    const canClose = {{ auth()->user()->atLeast('logger') ? 'true' : 'false' }};
+    const canClose = true;
     const markers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
@@ -70,10 +70,12 @@
 
     function popup(en) {
       const el = document.createElement('div');
-      el.innerHTML = `<div class="font-semibold text-base">${esc(en.location)}</div>
-        <div class="text-xs">${esc(en.type)} · ${esc(en.area || '—')} · open <b>${fmtElapsed(en.elapsed_s)}</b></div>
+      el.innerHTML = `<div class="font-mono text-xs text-slate-400">${esc(en.hrw_ref || '')}</div>
+        <div class="font-semibold text-base">${esc(en.location)}</div>
+        <div class="text-xs">${esc(en.type_display || en.type)} · ${esc(en.area || '—')} · open <b>${fmtElapsed(en.elapsed_s)}</b></div>
         ${en.notes ? `<div class="text-xs mt-1">${esc(en.notes)}</div>` : ''}
-        <div class="text-xs text-slate-400 mt-1">${esc(new Date(en.opened_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))} · ${esc(en.opened_by || '')}${en.permit_no ? ' · permit ' + esc(en.permit_no) : ''}</div>`;
+        ${en.location_document_url ? `<div class="mt-2"><a href="${esc(en.location_document_url)}" target="_blank" rel="noopener" class="underline font-semibold">Open location PDF${en.location_document_name ? ' — ' + esc(en.location_document_name) : ''}</a></div>` : ''}
+        <div class="text-xs text-slate-400 mt-1">${esc(new Date(en.opened_at).toLocaleTimeString('en-AU', {timeZone:'Australia/Perth',hour:'2-digit',minute:'2-digit'}))} · ${esc(en.opened_by || '')}${en.permit_no ? ' · permit ' + esc(en.permit_no) : ''}</div>`;
       if (canClose) {
         const f = document.createElement('form');
         f.method = 'post';
@@ -87,19 +89,19 @@
 
     async function refresh() {
       try {
-        const j = await CsemMap.fetchJson('/api/open', 'Open entries');
+        const j = await HwrtMap.fetchJson('/api/open', 'Open entries');
         const seen = new Set();
         for (const en of j.entries) {
           seen.add(en.id);
           let mk = markers.get(en.id);
           if (!mk) {
             mk = L.marker(toLL(en.easting, en.northing), {
-              icon: CsemMap.entryIcon(en),
+              icon: HwrtMap.entryIcon(en),
               zIndexOffset: 1000,
             }).addTo(pins);
             markers.set(en.id, mk);
           } else {
-            mk.setIcon(CsemMap.entryIcon(en));
+            mk.setIcon(HwrtMap.entryIcon(en));
           }
           mk.bindTooltip(`${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -36] });
           mk.bindPopup(popup(en));
@@ -112,8 +114,8 @@
         }
         document.getElementById('count').textContent = `${j.entries.length} open`;
       } catch (error) {
-        console.error('CSEM map: open entries unavailable', error);
-        window.csemReportError?.('map-open-entries', error.message || 'Open entries refresh failed', {
+        console.error('HWRT map: open entries unavailable', error);
+        window.hwrtReportError?.('map-open-entries', error.message || 'Open entries refresh failed', {
           stack: error.stack || null,
         });
         showNotice('Map loaded, but open entries could not be refreshed.', false);
@@ -121,16 +123,16 @@
     }
 
     await refresh();
-    setInterval(refresh, {{ config('csem.poll_seconds') }} * 1000);
+    setInterval(refresh, {{ config('hwrt.poll_seconds') }} * 1000);
 
     const focus = new URLSearchParams(location.search);
     if (focus.get('e') && focus.get('n')) cm.focus(+focus.get('e'), +focus.get('n'), 2);
   } catch (error) {
-    console.error('CSEM map failed to initialise', error);
-    window.csemReportError?.('map-init', error.message || 'Map failed to initialise', {
+    console.error('HWRT map failed to initialise', error);
+    window.hwrtReportError?.('map-init', error.message || 'Map failed to initialise', {
       stack: error.stack || null,
     });
-    mapEl.dataset.csemMapState = 'error';
+    mapEl.dataset.hwrtMapState = 'error';
     showNotice('Map imagery could not be loaded. ' + (error.message || ''), true);
   }
 })();

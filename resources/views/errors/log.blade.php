@@ -6,7 +6,7 @@
   <div class="flex flex-wrap items-center gap-3">
     <div>
       <h1 class="text-2xl font-bold">Error log</h1>
-      <p class="text-sm text-slate-400">Server exceptions and browser/map errors from <code>storage/logs/csem-errors.log</code>.</p>
+      <p class="text-sm text-slate-400">Server exceptions and browser/map errors from <code>storage/logs/hwrt-errors.log</code>.</p>
     </div>
     <div class="flex-1"></div>
     <a href="{{ route('errors.index', ['lines' => $lines]) }}" class="px-3 py-2 rounded bg-slate-700 hover:bg-slate-600 text-sm">Refresh</a>
@@ -49,7 +49,7 @@
     <pre class="overflow-auto whitespace-pre-wrap break-words rounded-lg bg-black/60 border border-slate-700 p-4 text-xs leading-5 max-h-[72vh]">{{ $content }}</pre>
   @else
     <div class="rounded-lg border border-slate-700 bg-slate-800 p-6 text-slate-300">
-      No entries in <code>csem-errors.log</code>.
+      No entries in <code>hwrt-errors.log</code>.
     </div>
   @endif
 </div>

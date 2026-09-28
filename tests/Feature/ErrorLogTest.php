@@ -15,7 +15,7 @@ class ErrorLogTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->logPath = storage_path('logs/csem-errors.log');
+        $this->logPath = storage_path('logs/hwrt-errors.log');
         @unlink($this->logPath);
     }
 
@@ -27,9 +27,9 @@ class ErrorLogTest extends TestCase
 
     public function test_browser_errors_are_written_to_dedicated_log(): void
     {
-        $viewer = User::factory()->create(['role' => 'viewer']);
+        $user = User::factory()->create(['role' => 'user']);
 
-        $this->actingAs($viewer)->postJson('/api/client-errors', [
+        $this->actingAs($user)->postJson('/api/client-errors', [
             'kind' => 'map-warning',
             'message' => 'Test raster failed',
             'source' => '/sitemap/test.jpg',
@@ -44,34 +44,31 @@ class ErrorLogTest extends TestCase
         $this->assertStringContainsString('/sitemap/test.jpg', $log);
     }
 
-    public function test_error_page_is_supervisor_only_and_can_download_log(): void
+    public function test_error_page_is_admin_only_and_can_download_log(): void
     {
-        $viewer = User::factory()->create(['role' => 'viewer']);
-        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $user = User::factory()->create(['role' => 'user']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         file_put_contents($this->logPath, "[test] visible error line\n");
 
-        $this->actingAs($viewer)->get('/error')->assertForbidden();
+        $this->actingAs($user)->get('/error')->assertForbidden();
 
-        $this->actingAs($supervisor)
+        $this->actingAs($admin)
             ->get('/error')
             ->assertOk()
             ->assertSee('Error log')
             ->assertSee('visible error line');
 
-        $this->actingAs($supervisor)
+        $this->actingAs($admin)
             ->get('/error/download')
             ->assertOk()
-            ->assertDownload('csem-errors.log');
+            ->assertDownload('hwrt-errors.log');
     }
 
-    public function test_only_admin_can_clear_error_log(): void
+    public function test_admin_can_clear_error_log(): void
     {
-        $supervisor = User::factory()->create(['role' => 'supervisor']);
         $admin = User::factory()->create(['role' => 'admin']);
         file_put_contents($this->logPath, "old error\n");
-
-        $this->actingAs($supervisor)->post('/error/clear')->assertForbidden();
 
         $this->actingAs($admin)
             ->post('/error/clear')
