@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Models\WorkType;
 use App\Models\WorkTag;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LocationAndCustomReportsTest extends TestCase
@@ -151,5 +153,57 @@ class LocationAndCustomReportsTest extends TestCase
         $this->actingAs($operator)->get(route('reports.custom', [
             'from' => '2026-09-29', 'to' => '2026-09-29', 'date_basis' => 'planned',
         ]))->assertOk()->assertSee('1 matching job(s)')->assertSee('Tomorrow');
+    }
+
+    public function test_admin_merges_duplicate_catalogue_locations_without_changing_logged_pin(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $type = WorkType::create(['name' => 'Hot Work', 'colour' => '#123456', 'active' => true]);
+        $source = Location::create(['name' => 'Old name', 'easting' => 476000, 'northing' => 7718000]);
+        $target = Location::create(['name' => 'Canonical', 'easting' => 476100, 'northing' => 7718100]);
+        $entry = Entry::create([
+            'location_id' => $source->id, 'location_label' => 'Old name',
+            'easting' => 476000, 'northing' => 7718000,
+            'work_type_id' => $type->id, 'status' => 'open',
+            'opened_at' => '2026-09-28 08:00:00', 'opened_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)->post("/settings/locations/{$source->id}/merge", [
+            'target_id' => $target->id, 'reason' => 'Duplicate asset label',
+        ])->assertRedirect(route('settings.locations.edit', $target));
+        $this->assertSame($target->id, $entry->fresh()->location_id);
+        $this->assertSame('Old name', $entry->fresh()->location_label);
+        $this->assertEqualsWithDelta(476000, $entry->fresh()->easting, 0.001);
+        $this->assertSame($target->id, $source->fresh()->merged_into_id);
+        $this->assertContains('Old name', $target->fresh()->aliases);
+        $this->actingAs($admin)->patch("/settings/locations/{$source->id}/status", [
+            'status' => 'active', 'reason' => 'Undo',
+        ])->assertSessionHasErrors('location');
+    }
+
+    public function test_location_csv_previews_conflicts_and_imports_only_after_admin_confirmation(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role' => 'user']);
+        $csv = "name,code,easting,northing,epsg,aliases\nTank north,T-9,476000,7718000,28350,Old tank|Tank A\n";
+        $this->actingAs($user)->post('/settings/locations/import/preview', [
+            'file' => UploadedFile::fake()->createWithContent('locations.csv', $csv),
+        ])->assertForbidden();
+        $preview = $this->actingAs($admin)->post('/settings/locations/import/preview', [
+            'file' => UploadedFile::fake()->createWithContent('locations.csv', $csv),
+        ])->assertOk()->assertSee('Ready to create');
+        $this->assertDatabaseCount('locations', 0);
+        $this->actingAs($admin)->post('/settings/locations/import/apply', [
+            'token' => $preview->viewData('token'),
+        ])->assertRedirect(route('settings.locations.index'));
+        $location = Location::where('code', 'T-9')->firstOrFail();
+        $this->assertSame(['Old tank', 'Tank A'], $location->aliases);
+        $this->assertSame('imported', $location->revisions()->first()->action);
+
+        $this->actingAs($admin)->post('/settings/locations/import/preview', [
+            'file' => UploadedFile::fake()->createWithContent('locations.csv', $csv),
+        ])->assertOk()->assertSee('Name or code already exists');
+        $this->assertDatabaseCount('locations', 1);
     }
 }

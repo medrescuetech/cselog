@@ -10,6 +10,7 @@
     </div>
     <div class="flex-1"></div>
     <a href="{{ route('settings.locations.create') }}" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold">+ Add location</a>
+    <a href="{{ route('settings.locations.import') }}" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-4 py-2 text-sm">Import CSV</a>
     <a href="{{ route('settings.index') }}" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-2 text-sm">Back to Settings</a>
   </div>
 

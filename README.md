@@ -21,6 +21,7 @@ HWRT is a web application for logging, scheduling, monitoring and reporting high
 - Runtime map requests use local `/sitemap/...` files; HRW/user/job data is not sent to ArcGIS.
 - Optional private PDF attachment for each catalogue location, linked from map pin details.
 - Admin pre-storage, map/coordinate editing, archiving and audit history for saved locations; prior job snapshots remain intact.
+- Duplicate-location merge and preview-first MGA50 CSV import, without rewriting historical job positions.
 - Manual key-landmark management with map-click coordinate selection.
 - Recent Logbook and filtered Reports with CSV export.
 - Custom report builder with date meaning, location/type/area/tag filters, grouping and selected CSV columns; printable shift handover view.

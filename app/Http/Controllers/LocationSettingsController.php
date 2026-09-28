@@ -43,6 +43,8 @@ class LocationSettingsController extends Controller
             'revisions' => $location->revisions()->with('actor:id,name')->limit(25)->get(),
             'openJobs' => Entry::query()->where('location_id', $location->id)
                 ->whereIn('status', ['open', 'pending'])->count(),
+            'mergeTargets' => Location::active()->whereKeyNot($location->id)->orderBy('name')->get(['id', 'name']),
+            'linkedJobs' => Entry::where('location_id', $location->id)->count(),
         ]);
     }
 
@@ -61,6 +63,9 @@ class LocationSettingsController extends Controller
 
     public function update(Request $request, Location $location)
     {
+        if ($location->merged_into_id) {
+            return back()->withErrors(['location' => 'This location has been merged. Edit the surviving location instead.']);
+        }
         $data = $this->validatedLocation($request, $location);
         $moving = (float) $location->easting !== (float) $data['easting']
             || (float) $location->northing !== (float) $data['northing'];
@@ -82,6 +87,9 @@ class LocationSettingsController extends Controller
 
     public function status(Request $request, Location $location)
     {
+        if ($location->merged_into_id) {
+            return back()->withErrors(['location' => 'Merged locations cannot be reactivated. Edit the survivor instead.']);
+        }
         $data = $request->validate([
             'status' => ['required', Rule::in(['active', 'archived'])],
             'reason' => 'required|string|max:255',
@@ -95,6 +103,44 @@ class LocationSettingsController extends Controller
         }
 
         return redirect()->route('settings.locations.edit', $location)->with('status', 'Location status updated; historical jobs are unchanged.');
+    }
+
+    public function merge(Request $request, Location $location)
+    {
+        $data = $request->validate([
+            'target_id' => 'required|integer|exists:locations,id',
+            'reason' => 'required|string|max:255',
+        ]);
+        if ((int) $data['target_id'] === $location->id) {
+            return back()->withErrors(['target_id' => 'Choose a different saved location.']);
+        }
+
+        DB::transaction(function () use ($location, $data) {
+            $source = Location::lockForUpdate()->findOrFail($location->id);
+            $target = Location::lockForUpdate()->findOrFail($data['target_id']);
+            if ($source->merged_into_id || $target->status !== 'active' || $target->merged_into_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'target_id' => 'Source is already merged or target is not active. Reload and choose an active location.',
+                ]);
+            }
+            $beforeSource = $source->only(['name', 'code', 'aliases', 'easting', 'northing', 'area_id', 'status', 'verified', 'merged_into_id']);
+            $beforeTarget = $target->only(['name', 'code', 'aliases', 'easting', 'northing', 'area_id', 'status', 'verified', 'merged_into_id']);
+            $aliases = array_values(array_unique(array_filter(array_merge($target->aliases ?? [], [$source->name], $source->aliases ?? []))));
+            if (strlen(implode(', ', $aliases)) > 500) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'target_id' => 'Too many aliases to merge. Shorten the location aliases first.',
+                ]);
+            }
+            $target->update(['aliases' => $aliases]);
+            // Repoint the catalogue relationship only. Logged labels, coordinates and areas are snapshots.
+            Entry::where('location_id', $source->id)->update(['location_id' => $target->id]);
+            $source->update(['status' => 'archived', 'merged_into_id' => $target->id]);
+            $source->recordRevision('merged', $beforeSource, $data['reason']);
+            $target->recordRevision('merge-target', $beforeTarget, $data['reason']);
+        });
+
+        return redirect()->route('settings.locations.edit', $data['target_id'])
+            ->with('status', 'Locations merged. Work history retains its original name, pin and area.');
     }
 
     private function validatedLocation(Request $request, ?Location $location = null): array

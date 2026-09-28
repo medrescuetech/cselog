@@ -37,7 +37,7 @@ class Location extends Model
             'actor_id' => auth()->id(),
             'action' => $action,
             'before' => $before,
-            'after' => $this->only(['name', 'code', 'aliases', 'easting', 'northing', 'area_id', 'status', 'verified']),
+            'after' => $this->only(['name', 'code', 'aliases', 'easting', 'northing', 'area_id', 'status', 'verified', 'merged_into_id']),
             'reason' => $reason,
         ]);
     }
