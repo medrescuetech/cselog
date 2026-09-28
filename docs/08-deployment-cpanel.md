@@ -28,9 +28,10 @@ Inspect `.env` locally without pasting secrets into tickets, chat or CI logs. Co
 1. Record the current deployed commit and database engine. Verify staging uses a separate database, `.env`, and document root from production.
 2. Take a copy of the current database, `.env`, uploaded location documents, runtime map package and release ref. Store a backup outside the cPanel account.
 3. Rehearse [database backup and restore](12-database-backup-and-restore.md) on a disposable staging database. Check a known account, work entry and report count after restoration.
-4. Set a unique `HWRT_ADMIN_PASSWORD` of at least 16 characters in the staging and production `.env` files before migrations and config caching. The hosted bootstrap command refuses the default `admin` password; the new Admin must still rotate the configured password at first login. Keep this value out of Git and logs.
-5. Verify the installed `public/sitemap` is the tracked symlink to `../storage/app/hwrt-sitemap/current`. If the older installation has a real directory, plan its migration explicitly; the update helper stops rather than replacing it.
-6. Confirm local CSS, Alpine and Leaflet assets are present in the release checkout. No Node build is required on the host when the committed assets are current.
+4. On a staging install with `APP_ENV=staging`, set `HWRT_SITEMAP_PATH=/home/akgmxkpo/csem-review/storage/app/hwrt-sitemap/current` (adjust path if needed) so API layers and the public symlink use the same versioned map. Preserve `APP_KEY` and existing database settings.
+5. Set a unique `HWRT_ADMIN_PASSWORD` of at least 16 characters in the staging and production `.env` files before migrations and config caching. The hosted bootstrap command refuses the default `admin` password; the new Admin must still rotate the configured password at first login. Keep this value out of Git and logs.
+6. Verify the installed `public/sitemap` is the tracked symlink to `../storage/app/hwrt-sitemap/current`. If the older installation has a real directory, plan its migration explicitly; the update helper stops rather than replacing it.
+7. Confirm local CSS, Alpine and Leaflet assets are present in the release checkout. No Node build is required on the host when the committed assets are current.
 
 ## Stage the exact release candidate
 
