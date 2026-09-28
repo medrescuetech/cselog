@@ -131,7 +131,7 @@ class EntryFlowTest extends TestCase
         $entry->refresh();
         $this->assertSame('closed', $entry->status);
         $this->assertSame($this->user->id, $entry->closed_by);
-        $this->assertSame('closed', $entry->events()->latest('id')->first()->event);
+        $this->assertSame('closed', $entry->events()->reorder()->latest('id')->first()->event);
 
         $this->actingAs($this->user)->get('/api/open')->assertOk()->assertJsonCount(0, 'entries');
     }

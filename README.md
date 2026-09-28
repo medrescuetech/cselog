@@ -14,13 +14,16 @@ HWRT is a web application for logging, scheduling, monitoring and reporting high
 - Pending work appears in a dedicated list and on the Board on its planned Perth calendar day.
 - Explicit **Start** action records actual commencement time/user.
 - Configurable high risk work types, including **Other**, per-type Notes prompts and Notes-required rules.
+- Admin-managed additional activity/hazard tags for jobs that span more than one category.
 - Permanent identifiers such as `HRW-000001`.
 - Live local site map with MGA Zone 50 coordinates and open-work pins.
 - Configurable manual/automatic refresh of the existing local map package from public ArcGIS sources.
 - Runtime map requests use local `/sitemap/...` files; HRW/user/job data is not sent to ArcGIS.
 - Optional private PDF attachment for each catalogue location, linked from map pin details.
+- Admin pre-storage, map/coordinate editing, archiving and audit history for saved locations; prior job snapshots remain intact.
 - Manual key-landmark management with map-click coordinate selection.
 - Recent Logbook and filtered Reports with CSV export.
+- Custom report builder with date meaning, location/type/area/tag filters, grouping and selected CSV columns; printable shift handover view.
 - Dark/light appearance setting.
 - Local diagnostics at `/error`.
 - Application version displayed in the bottom-left of the authenticated UI.

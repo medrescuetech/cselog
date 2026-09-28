@@ -15,19 +15,21 @@ class WorkTagController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['name' => trim((string) $request->input('name'))]);
         $data = $request->validate(['name' => 'required|string|max:80|unique:work_tags,name']);
-        WorkTag::create(['name' => trim($data['name']), 'active' => true]);
+        WorkTag::create(['name' => $data['name'], 'active' => true]);
 
         return back()->with('status', 'Activity tag added.');
     }
 
     public function update(Request $request, WorkTag $workTag)
     {
+        $request->merge(['name' => trim((string) $request->input('name'))]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80', Rule::unique('work_tags', 'name')->ignore($workTag->id)],
             'active' => 'required|boolean',
         ]);
-        $workTag->update(['name' => trim($data['name']), 'active' => (bool) $data['active']]);
+        $workTag->update(['name' => $data['name'], 'active' => (bool) $data['active']]);
 
         return back()->with('status', 'Activity tag updated. Existing job tags remain in reports.');
     }

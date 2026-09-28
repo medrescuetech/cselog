@@ -1,6 +1,6 @@
 # HWRT product gap and improvement review — 28 September 2026
 
-**Review target:** `v2/release-candidate`, following the `dev.akgmed.org` V2 rehearsal. **Status:** design recommendations, not implemented requirements. This review does not change the deployment checklist or make a permit-to-work approval claim.
+**Review target:** `v2/release-candidate`, following the `dev.akgmed.org` V2 rehearsal. **Status:** baseline findings before implementation. See `HWRT_IMPROVEMENTS_IMPLEMENTATION_2026-09-28.md` for what was subsequently built and what remains. This review does not change the deployment checklist or make a permit-to-work approval claim.
 
 ## 1. Intended product and boundary
 
