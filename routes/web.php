@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\EntryController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\LocationController;
@@ -37,6 +38,9 @@ Route::middleware(['auth', 'password.changed', 'role:user'])->group(function () 
     Route::get('/logbook', [ReportController::class, 'logbook'])->name('logbook');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports.csv', [ReportController::class, 'csv'])->name('reports.csv');
+    Route::get('/reports/custom', [CustomReportController::class, 'index'])->name('reports.custom');
+    Route::get('/reports/custom.csv', [CustomReportController::class, 'csv'])->name('reports.custom.csv');
+    Route::get('/reports/handover', [CustomReportController::class, 'handover'])->name('reports.handover');
 
     // Retain the detailed historical view for compatibility and audit review.
     Route::get('/history', [EntryController::class, 'history'])->name('history');
@@ -70,6 +74,11 @@ Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function ()
     Route::post('/settings/map/refresh', [MapSettingsController::class, 'requestRefresh'])->name('settings.map.refresh');
 
     Route::get('/settings/locations', [LocationSettingsController::class, 'index'])->name('settings.locations.index');
+    Route::get('/settings/locations/create', [LocationSettingsController::class, 'create'])->name('settings.locations.create');
+    Route::post('/settings/locations', [LocationSettingsController::class, 'store'])->name('settings.locations.store');
+    Route::get('/settings/locations/{location}/edit', [LocationSettingsController::class, 'edit'])->name('settings.locations.edit');
+    Route::patch('/settings/locations/{location}', [LocationSettingsController::class, 'update'])->name('settings.locations.update');
+    Route::patch('/settings/locations/{location}/status', [LocationSettingsController::class, 'status'])->name('settings.locations.status');
     Route::patch('/settings/locations/{location}/verify', [LocationSettingsController::class, 'verify'])->name('settings.locations.verify');
     Route::post('/settings/locations/{location}/document', [LocationSettingsController::class, 'upload'])->name('settings.locations.document.upload');
     Route::delete('/settings/locations/{location}/document', [LocationSettingsController::class, 'remove'])->name('settings.locations.document.remove');

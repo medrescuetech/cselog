@@ -3,9 +3,14 @@
 
 @section('content')
 <div class="space-y-4">
-  <div>
+  <div class="flex flex-wrap items-center gap-3">
+    <div>
     <h1 class="text-2xl font-bold">Reports</h1>
     <p class="text-sm text-slate-400 mt-1">Filter and export high risk work by date range, type, status or all records.</p>
+    </div>
+    <div class="flex-1"></div>
+    <a href="{{ route('reports.custom') }}" class="rounded bg-emerald-700 hover:bg-emerald-600 px-3 py-2 text-sm font-semibold">Build custom report</a>
+    <a href="{{ route('reports.handover') }}" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm">Shift handover</a>
   </div>
 
   <form method="get" class="grid gap-2 md:grid-cols-7 text-sm">

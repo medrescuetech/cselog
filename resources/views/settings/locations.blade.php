@@ -6,9 +6,10 @@
   <div class="flex flex-wrap items-end gap-3">
     <div>
       <h1 class="text-2xl font-bold">Settings · Locations</h1>
-      <p class="text-sm text-slate-400 mt-1">Verify locations created from dropped pins and attach one optional PDF per location. PDFs are stored privately and require an HWRT login to download.</p>
+      <p class="text-sm text-slate-400 mt-1">Create and maintain reusable locations, review dropped pins and attach private PDFs.</p>
     </div>
     <div class="flex-1"></div>
+    <a href="{{ route('settings.locations.create') }}" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold">+ Add location</a>
     <a href="{{ route('settings.index') }}" class="rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-2 text-sm">Back to Settings</a>
   </div>
 
@@ -27,6 +28,7 @@
           <div>
             <div class="flex items-center gap-2">
               <span class="font-semibold text-lg">{{ $location->name }}</span>
+              @if ($location->status === 'archived') <span class="text-xs text-slate-400">archived</span> @endif
               @if ($location->verified)
                 <span class="text-[10px] uppercase text-emerald-400">verified</span>
               @else
@@ -38,6 +40,7 @@
               E {{ number_format($location->easting, 1) }} N {{ number_format($location->northing, 1) }} ·
               used {{ $location->usage_count }}×
             </div>
+            <a href="{{ route('settings.locations.edit', $location) }}" class="inline-block mt-2 rounded bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-sm">Edit name / pin / aliases</a>
             <form method="post" action="{{ route('settings.locations.verify', $location) }}" class="mt-2">
               @csrf @method('PATCH')
               <input type="hidden" name="verified" value="{{ $location->verified ? 0 : 1 }}">

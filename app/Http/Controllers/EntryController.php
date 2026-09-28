@@ -8,6 +8,7 @@ use App\Models\Location;
 use App\Models\WorkType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EntryController extends Controller
@@ -25,7 +26,8 @@ class EntryController extends Controller
     {
         $d = $request->validate([
             'work_type_id' => 'required|exists:work_types,id',
-            'location_id' => 'nullable|exists:locations,id',
+            'location_id' => ['nullable', Rule::exists('locations', 'id')
+                ->where('status', 'active')->whereNull('merged_into_id')],
             'location_label' => 'required_without:location_id|nullable|string|max:160',
             'easting' => 'required_without:location_id|nullable|numeric',
             'northing' => 'required_without:location_id|nullable|numeric',
