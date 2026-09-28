@@ -13,6 +13,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkTypeController;
+use App\Http\Controllers\WorkTagController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthController::class, 'show'])->name('login')->middleware('guest');
@@ -69,6 +70,9 @@ Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function ()
     Route::get('/settings/work-types', [WorkTypeController::class, 'index'])->name('settings.work-types.index');
     Route::post('/settings/work-types', [WorkTypeController::class, 'store'])->name('settings.work-types.store');
     Route::patch('/settings/work-types/{workType}', [WorkTypeController::class, 'update'])->name('settings.work-types.update');
+    Route::get('/settings/work-tags', [WorkTagController::class, 'index'])->name('settings.work-tags.index');
+    Route::post('/settings/work-tags', [WorkTagController::class, 'store'])->name('settings.work-tags.store');
+    Route::patch('/settings/work-tags/{workTag}', [WorkTagController::class, 'update'])->name('settings.work-tags.update');
 
     Route::post('/settings/map', [MapSettingsController::class, 'update'])->name('settings.map.update');
     Route::post('/settings/map/refresh', [MapSettingsController::class, 'requestRefresh'])->name('settings.map.refresh');

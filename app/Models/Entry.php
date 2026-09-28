@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Entry extends Model
@@ -54,6 +55,11 @@ class Entry extends Model
     public function events(): HasMany
     {
         return $this->hasMany(EntryEvent::class)->orderBy('occurred_at');
+    }
+
+    public function workTags(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkTag::class, 'entry_work_tag');
     }
 
     public function scopeOpen($q)

@@ -63,6 +63,15 @@
            placeholder="e.g. pressure testing / lifting operation">
   </label>
 
+  @if ($workTags->isNotEmpty())
+    <fieldset class="rounded-lg border border-slate-700 bg-slate-800/70 p-3">
+      <legend class="px-2 text-sm text-slate-300">Additional activities / hazards (optional)</legend>
+      <div class="flex flex-wrap gap-3">@foreach ($workTags as $tag)
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="work_tags[]" value="{{ $tag->id }}" @checked(in_array($tag->id, old('work_tags', [])))> {{ $tag->name }}</label>
+      @endforeach</div>
+    </fieldset>
+  @endif
+
   {{-- Location picker --}}
   <div>
     <span class="text-sm text-slate-300">Location</span>

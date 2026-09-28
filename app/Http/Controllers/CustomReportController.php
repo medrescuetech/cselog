@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Entry;
 use App\Models\Location;
 use App\Models\WorkType;
+use App\Models\WorkTag;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -21,9 +22,10 @@ class CustomReportController extends Controller
         'location' => 'Location at logging', 'area' => 'Area at logging',
         'permit' => 'Permit reference', 'notes' => 'Notes',
         'reported_by' => 'Reported by', 'opened_by' => 'Opened by', 'closed_by' => 'Closed by',
+        'work_tags' => 'Additional activities / hazards',
     ];
 
-    private const DEFAULT_COLUMNS = ['hrw_id', 'opened', 'closed', 'status', 'type', 'other_type', 'location', 'area', 'permit'];
+    private const DEFAULT_COLUMNS = ['hrw_id', 'opened', 'closed', 'status', 'type', 'other_type', 'work_tags', 'location', 'area', 'permit'];
 
     public function index(Request $request)
     {
@@ -33,8 +35,9 @@ class CustomReportController extends Controller
         if ($f['group_by'] !== 'none') {
             (clone $query)->chunk(500, function ($rows) use (&$grouped, $f) {
                 foreach ($rows as $entry) {
-                    $key = $this->groupName($entry, $f['group_by'], $f['date_basis']);
-                    $grouped[$key] = ($grouped[$key] ?? 0) + 1;
+                    foreach ($this->groupNames($entry, $f['group_by'], $f['date_basis']) as $key) {
+                        $grouped[$key] = ($grouped[$key] ?? 0) + 1;
+                    }
                 }
             });
             arsort($grouped);
@@ -54,6 +57,7 @@ class CustomReportController extends Controller
             'total' => (clone $query)->count(),
             'grouped' => $grouped,
             'workTypes' => WorkType::orderBy('name')->get(),
+            'workTags' => WorkTag::orderBy('name')->get(),
             'areas' => Area::orderBy('name')->get(),
             'locations' => Location::orderBy('name')->get(['id', 'name', 'code', 'status']),
         ]);
@@ -115,8 +119,9 @@ class CustomReportController extends Controller
             'location_id' => 'nullable|integer|exists:locations,id',
             'location_text' => 'nullable|string|max:120',
             'q' => 'nullable|string|max:120',
-            'group_by' => ['nullable', Rule::in(['none', 'type', 'other_type', 'location', 'area', 'status', 'day'])],
-            'columns' => 'nullable|array|min:1|max:15',
+            'work_tag_id' => 'nullable|integer|exists:work_tags,id',
+            'group_by' => ['nullable', Rule::in(['none', 'type', 'other_type', 'tag', 'location', 'area', 'status', 'day'])],
+            'columns' => 'nullable|array|min:1|max:16',
             'columns.*' => ['string', Rule::in(array_keys(self::COLUMNS))],
         ]);
         $f['date_basis'] = $f['date_basis'] ?? 'opened';
@@ -132,7 +137,7 @@ class CustomReportController extends Controller
         $to = isset($f['to']) ? Carbon::parse($f['to'], config('app.timezone'))->endOfDay() : null;
         $basis = $f['date_basis'];
 
-        return Entry::query()->with(['workType', 'area', 'opener', 'closer'])
+        return Entry::query()->with(['workType', 'workTags', 'area', 'opener', 'closer'])
             ->when($basis === 'opened', fn ($q) => $q->where('status', '!=', 'pending'))
             ->when($basis === 'planned', fn ($q) => $q->whereNotNull('planned_start_at'))
             ->when($basis === 'active', fn ($q) => $q->where('status', '!=', 'pending')->where('status', '!=', 'cancelled'))
@@ -146,6 +151,7 @@ class CustomReportController extends Controller
             ->when($to, fn ($q) => $q->where($basis === 'planned' ? 'planned_start_at' : 'opened_at', '<=', $to))
             ->when($f['status'] ?? null, fn ($q, $value) => $q->where('status', $value))
             ->when($f['work_type_id'] ?? null, fn ($q, $value) => $q->where('work_type_id', $value))
+            ->when($f['work_tag_id'] ?? null, fn ($q, $value) => $q->whereHas('workTags', fn ($tag) => $tag->whereKey($value)))
             ->when($f['area_id'] ?? null, fn ($q, $value) => $q->where('area_id', $value))
             ->when($f['location_id'] ?? null, fn ($q, $value) => $q->where('location_id', $value))
             ->when($f['location_text'] ?? null, fn ($q, $value) => $q->where('location_label', 'like', "%{$value}%"))
@@ -155,9 +161,13 @@ class CustomReportController extends Controller
             ->orderByDesc('opened_at')->orderByDesc('id');
     }
 
-    private function groupName(Entry $entry, string $by, string $basis): string
+    private function groupNames(Entry $entry, string $by, string $basis): array
     {
-        return match ($by) {
+        if ($by === 'tag') {
+            return $entry->workTags->isEmpty() ? ['No additional tags'] : $entry->workTags->pluck('name')->all();
+        }
+
+        return [match ($by) {
             'type' => $entry->workType?->name ?? 'Unknown',
             'other_type' => $entry->workType?->is_other ? ($entry->other_description ?: 'Other, unspecified') : 'Named work type',
             'location' => $entry->location_label,
@@ -165,7 +175,7 @@ class CustomReportController extends Controller
             'status' => ucfirst($entry->status),
             'day' => ($basis === 'planned' ? $entry->planned_start_at : $entry->opened_at)->format('Y-m-d'),
             default => 'All',
-        };
+        }];
     }
 
     private function value(Entry $entry, string $column): string|int|float|null
@@ -186,6 +196,7 @@ class CustomReportController extends Controller
             'reported_by' => $entry->reported_by,
             'opened_by' => $entry->opener?->name,
             'closed_by' => $entry->closer?->name,
+            'work_tags' => $entry->workTags->pluck('name')->implode(', '),
             default => null,
         };
     }

@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Entry;
 use App\Models\Location;
 use App\Models\WorkType;
+use App\Models\WorkTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,7 @@ class EntryController extends Controller
             'workTypes' => WorkType::active()->get(),
             'defaultType' => WorkType::active()->where('is_default', true)->first() ?? WorkType::active()->first(),
             'timezone' => config('app.timezone'),
+            'workTags' => WorkTag::where('active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -38,6 +40,8 @@ class EntryController extends Controller
             'opened_at' => 'nullable|date',
             'late_reason' => 'nullable|string|max:255',
             'planned_start_at' => 'nullable|date',
+            'work_tags' => 'nullable|array|max:12',
+            'work_tags.*' => ['integer', 'distinct', Rule::exists('work_tags', 'id')->where('active', true)],
         ]);
 
         $type = WorkType::findOrFail($d['work_type_id']);
@@ -101,6 +105,7 @@ class EntryController extends Controller
             'opened_at' => $openedAt,
             'opened_by' => $request->user()->id,
         ]);
+        $entry->workTags()->sync($d['work_tags'] ?? []);
         $entry->log($planned ? 'scheduled' : 'created', $changes);
 
         if ($location) {

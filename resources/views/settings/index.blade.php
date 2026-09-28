@@ -18,6 +18,10 @@
       <div class="text-lg font-semibold">High Risk Work Types</div>
       <p class="text-sm text-slate-400 mt-1">Customise the defined list, colours, Notes prompts, Other and active types.</p>
     </a>
+    <a href="{{ route('settings.work-tags.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
+      <div class="text-lg font-semibold">Activity tags</div>
+      <p class="text-sm text-slate-400 mt-1">Optional additional activities or hazards for jobs with more than one type of work.</p>
+    </a>
 
     <a href="{{ route('settings.locations.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
       <div class="text-lg font-semibold">Locations & PDFs</div>
