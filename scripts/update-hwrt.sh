@@ -76,6 +76,13 @@ if [[ "$SKIP_GIT" == false ]]; then
   fi
 fi
 
+# A restrictive backup umask can leave checked-out public assets unreadable by Apache.
+# Limit public permissions to the document root and the explicitly published map package.
+find "$APP/public" -type d -exec chmod 755 {} +
+find "$APP/public" -type f -exec chmod 644 {} +
+find "$RUNTIME_MAP" -type d -exec chmod 755 {} +
+find "$RUNTIME_MAP" -type f -exec chmod 644 {} +
+
 "$COMPOSER" install --no-dev --optimize-autoloader --no-interaction
 "$PHP" artisan migrate --force
 "$PHP" artisan hwrt:bootstrap-admin
