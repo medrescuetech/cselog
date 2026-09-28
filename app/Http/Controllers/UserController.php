@@ -21,6 +21,16 @@ class UserController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return view('settings.users.form', ['user' => null, 'roles' => array_keys(User::ROLES)]);
+    }
+
+    public function edit(User $user)
+    {
+        return view('settings.users.form', ['user' => $user, 'roles' => array_keys(User::ROLES)]);
+    }
+
     public function store(Request $request)
     {
         $this->normalizeUsername($request);

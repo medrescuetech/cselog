@@ -68,6 +68,9 @@ class EntryFlowTest extends TestCase
             ->assertSee('Notes / Reported by')
             ->assertSee('Opened')
             ->assertSee('Opened by');
+        $this->actingAs($this->user)->get('/board')->assertSee('+ Log work');
+        $this->actingAs($this->user)->get('/log')->assertSee('type="checkbox"', false)
+            ->assertSee('Schedule in advance')->assertSee('Log a late start');
     }
 
     public function test_inactive_user_cannot_login_by_username(): void

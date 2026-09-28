@@ -18,12 +18,21 @@ class UserManagementTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($user)->get('/settings/users')->assertForbidden();
+        $this->actingAs($user)->get('/settings/users/create')->assertForbidden();
+        $this->actingAs($user)->get("/settings/users/{$admin->id}/edit")->assertForbidden();
 
         $this->actingAs($admin)
             ->get('/settings/users')
             ->assertOk()
             ->assertSee('Settings · Users')
-            ->assertSee($user->username);
+            ->assertSee($user->username)
+            ->assertSee('Add user')
+            ->assertSee('Edit');
+
+        $this->actingAs($admin)->get('/settings/users/create')
+            ->assertOk()->assertSee('Create user');
+        $this->actingAs($admin)->get("/settings/users/{$user->id}/edit")
+            ->assertOk()->assertSee('Save changes')->assertSee($user->username);
     }
 
     public function test_admin_can_create_username_only_user(): void

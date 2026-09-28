@@ -57,7 +57,9 @@ Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function ()
     Route::post('/settings/appearance', [SettingsController::class, 'appearance'])->name('settings.appearance');
 
     Route::get('/settings/users', [UserController::class, 'index'])->name('settings.users.index');
+    Route::get('/settings/users/create', [UserController::class, 'create'])->name('settings.users.create');
     Route::post('/settings/users', [UserController::class, 'store'])->name('settings.users.store');
+    Route::get('/settings/users/{user}/edit', [UserController::class, 'edit'])->name('settings.users.edit');
     Route::patch('/settings/users/{user}', [UserController::class, 'update'])->name('settings.users.update');
 
     Route::get('/settings/work-types', [WorkTypeController::class, 'index'])->name('settings.work-types.index');

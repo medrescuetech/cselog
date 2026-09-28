@@ -23,17 +23,17 @@
     </div>
   @endif
 
-  <div class="grid grid-cols-2 gap-2">
-    <button type="button" @click="planned = !planned; if (planned) late = false"
-            :class="planned ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'"
-            class="rounded-lg border px-3 py-3 text-sm font-semibold">
+  <div class="grid gap-2 md:grid-cols-2">
+    <label class="flex items-center gap-3 rounded-lg border px-3 py-3 text-sm font-semibold"
+           :class="planned ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'">
+      <input type="checkbox" x-model="planned" @change="if (planned) late = false" class="h-5 w-5">
       Schedule in advance
-    </button>
-    <button type="button" @click="late = !late; if (late) planned = false"
-            :class="late ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'"
-            class="rounded-lg border px-3 py-3 text-sm font-semibold">
+    </label>
+    <label class="flex items-center gap-3 rounded-lg border px-3 py-3 text-sm font-semibold"
+           :class="late ? 'bg-amber-700 border-amber-500' : 'bg-slate-800 border-slate-700'">
+      <input type="checkbox" x-model="late" @change="if (late) planned = false" class="h-5 w-5">
       Log a late start
-    </button>
+    </label>
   </div>
 
   <div x-show="planned" x-cloak class="bg-amber-950/35 border border-amber-800 rounded-lg p-3 space-y-2">

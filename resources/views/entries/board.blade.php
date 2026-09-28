@@ -7,6 +7,7 @@
     <h1 class="text-2xl font-bold">OPEN (<span x-text="entries.length"></span>)</h1>
     <span class="text-xs text-slate-500">refreshed <span x-text="ago"></span></span>
     <div class="flex-1"></div>
+    <a href="{{ route('entries.create') }}" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-semibold">+ Log work</a>
     <a href="{{ route('map') }}" class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-sm">Map</a>
   </div>
 
