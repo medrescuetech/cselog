@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
+!.env.docker
 
 # PHP / Laravel (for when the app lands)
 /vendor

@@ -3,12 +3,13 @@
 A web-based log and live map for tracking open work locations on a site (primarily confined
 space entries) that are called in by radio.
 
-**Status:** Phase 0–2 working locally — Laravel app (login/roles, quick log, open board,
+**Status:** Phase 0–2 working locally and verified for deployment — Laravel app (login/roles, quick log, open board,
 close-out, history + CSV, live map with MGA50 pins and pin-drop location creation) on top of
-the reusable `sitemap/` package. Not yet deployed.
+the reusable `sitemap/` package. Ready for staging & production release.
 
 ## Run it locally
 
+### Option A: Native (PHP 8.3 & Composer)
 ```bash
 composer install
 cp .env.example .env && php artisan key:generate      # SQLite by default
@@ -17,9 +18,17 @@ php artisan sitemap:import                            # areas/landmarks from sit
 php artisan serve                                     # http://localhost:8000
 ```
 
+### Option B: Docker Compose (App + MySQL 8.0)
+```bash
+docker compose up --build
+# In another terminal once up:
+docker compose exec app php artisan migrate --seed
+docker compose exec app php artisan sitemap:import
+```
+
 Default admin is `admin@example.com` / `changeme` — override with `CSEM_ADMIN_EMAIL` /
 `CSEM_ADMIN_PASSWORD` in `.env` before seeding anywhere real. `php artisan test` runs the suite;
-`scripts/smoke.sh` exercises every route against a running dev server.
+`scripts/smoke.sh` exercises every route against a running dev server. For deployment pre-flight, see [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) and [`docs/08-deployment-cpanel.md`](docs/08-deployment-cpanel.md).
 
 Stack as built: PHP 8.3 / Laravel 13, Blade + Alpine + Tailwind (CDN for now), Leaflet
 `CRS.Simple` in MGA Zone 50 metres. The cPanel host must therefore offer `ea-php83`; if it
