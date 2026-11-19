@@ -42,6 +42,14 @@ class EntryFlowTest extends TestCase
         $this->actingAs($this->viewer)->post('/log', [])->assertForbidden();
     }
 
+    public function test_log_form_does_not_display_unverified_tag(): void
+    {
+        $this->actingAs($this->logger)
+            ->get('/log')
+            ->assertOk()
+            ->assertDontSee('unverified');
+    }
+
     public function test_open_board_has_explicit_table_headers(): void
     {
         $this->actingAs($this->viewer)
