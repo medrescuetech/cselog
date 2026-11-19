@@ -4,11 +4,12 @@
 <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
 <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script src="/js/hwrt-map.js"></script>
+<script src="{{ asset('js/hwrt-colour-picker.js') }}"></script>
 <style>#landmark-map{height:480px}</style>
 @endpush
 
 @section('content')
-<div class="space-y-5" x-data="landmarkSettings()" x-init="init()">
+<div class="space-y-5" x-data="landmarkSettings()" x-init="init()" @sector-colour.window="sectorColour = $event.detail; redrawSector()">
   <div class="flex items-start gap-3">
     <div>
       <h1 class="text-2xl font-bold">Settings · Map overlays</h1>
@@ -48,9 +49,9 @@
           <label><span class="text-xs text-slate-400">Overlay category</span>
             <input name="category" x-model="category" maxlength="60" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label><span class="text-xs text-slate-400">Colour</span>
-            <input name="colour" type="color" value="{{ old('colour', '#ff5f1f') }}" class="mt-1 h-10 w-full rounded-lg bg-slate-900 border border-slate-700 px-1 py-1"></label>
+        <div class="grid grid-cols-[1fr_120px] gap-2">
+          <div><span class="text-xs text-slate-400">Colour</span>
+            <div class="mt-1">@include('settings.partials.colour-picker', ['name' => 'colour', 'value' => old('colour', '#ff5f1f'), 'event' => 'marker-colour'])</div></div>
           <label><span class="text-xs text-slate-400">Label angle</span>
             <input name="rotation_deg" value="{{ old('rotation_deg', 0) }}" type="number" min="-180" max="180" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
         </div>
@@ -73,9 +74,9 @@
         <h2 class="font-semibold text-lg">Add map sector</h2>
         <label class="block"><span class="text-xs text-slate-400">Sector name</span>
           <input name="name" value="{{ old('name') }}" required maxlength="120" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
-        <div class="grid grid-cols-3 gap-2">
-          <label><span class="text-xs text-slate-400">Colour</span>
-            <input name="colour" x-model="sectorColour" @input="redrawSector" type="color" class="mt-1 h-10 w-full rounded-lg bg-slate-900 border border-slate-700 px-1 py-1"></label>
+        <div class="grid grid-cols-[1fr_100px_90px] gap-2 items-end">
+          <div><span class="text-xs text-slate-400">Colour</span>
+            <div class="mt-1">@include('settings.partials.colour-picker', ['name' => 'colour', 'value' => old('colour', '#38bdf8'), 'event' => 'sector-colour'])</div></div>
           <label><span class="text-xs text-slate-400">Opacity</span>
             <input name="fill_opacity" x-model="sectorOpacity" @input="redrawSector" type="number" min="0" max="1" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label><span class="text-xs text-slate-400">Order</span>
@@ -107,7 +108,7 @@
       <form method="post" action="{{ route('settings.landmarks.update', $landmark) }}" class="rounded-xl border {{ $landmark->active ? 'border-slate-700 bg-slate-800/70' : 'border-slate-800 bg-slate-900/60 opacity-75' }} p-4 space-y-3">
         @csrf @method('PATCH')
         <div class="grid gap-3 lg:grid-cols-12 items-end">
-          <label class="lg:col-span-3"><span class="block text-xs text-slate-400 mb-1">Name</span>
+          <label class="lg:col-span-4"><span class="block text-xs text-slate-400 mb-1">Name</span>
             <input name="name" value="{{ $landmark->name }}" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Type</span>
             <select name="marker_type" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
@@ -117,19 +118,21 @@
             </select></label>
           <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Category</span>
             <input name="category" value="{{ $landmark->category }}" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
-          <label class="lg:col-span-1"><span class="block text-xs text-slate-400 mb-1">Colour</span>
-            <input name="colour" type="color" value="{{ $landmark->colour ?: '#ff5f1f' }}" class="h-10 w-full rounded-lg bg-slate-900 border border-slate-700 px-1 py-1"></label>
           <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Easting</span>
             <input name="easting" value="{{ $landmark->easting }}" required type="number" step="0.001" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Northing</span>
             <input name="northing" value="{{ $landmark->northing }}" required type="number" step="0.001" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
         </div>
         <div class="grid gap-3 lg:grid-cols-12 items-end">
+          <div class="lg:col-span-5"><span class="block text-xs text-slate-400 mb-1">Colour</span>
+            @include('settings.partials.colour-picker', ['name' => 'colour', 'value' => $landmark->colour ?: '#ff5f1f', 'event' => 'landmark-colour-'.$landmark->id])</div>
           <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Label angle</span>
             <input name="rotation_deg" value="{{ $landmark->rotation_deg }}" type="number" min="-180" max="180" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label class="lg:col-span-2 flex gap-2 items-center"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" @checked($landmark->active)> Active</label>
           <label class="lg:col-span-3 flex gap-2 items-center"><input type="hidden" name="label_visible" value="0"><input type="checkbox" name="label_visible" value="1" @checked($landmark->label_visible)> Show label</label>
-          <label class="lg:col-span-4"><span class="block text-xs text-slate-400 mb-1">Notes</span>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-12 items-end">
+          <label class="lg:col-span-11"><span class="block text-xs text-slate-400 mb-1">Notes</span>
             <input name="notes" value="{{ $landmark->notes }}" maxlength="1000" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <div class="lg:col-span-1"><button class="w-full rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">Save</button></div>
         </div>
@@ -144,10 +147,10 @@
       <form method="post" action="{{ route('settings.map-sectors.update', $sector) }}" class="rounded-xl border {{ $sector->active ? 'border-slate-700 bg-slate-800/70' : 'border-slate-800 bg-slate-900/60 opacity-75' }} p-4 space-y-3">
         @csrf @method('PATCH')
         <div class="grid gap-3 lg:grid-cols-12 items-end">
-          <label class="lg:col-span-4"><span class="block text-xs text-slate-400 mb-1">Name</span>
+          <label class="lg:col-span-3"><span class="block text-xs text-slate-400 mb-1">Name</span>
             <input name="name" value="{{ $sector->name }}" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
-          <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Colour</span>
-            <input name="colour" type="color" value="{{ $sector->colour }}" class="h-10 w-full rounded-lg bg-slate-900 border border-slate-700 px-1 py-1"></label>
+          <div class="lg:col-span-4"><span class="block text-xs text-slate-400 mb-1">Colour</span>
+            @include('settings.partials.colour-picker', ['name' => 'colour', 'value' => $sector->colour, 'event' => 'sector-colour-'.$sector->id])</div>
           <label class="lg:col-span-2"><span class="block text-xs text-slate-400 mb-1">Opacity</span>
             <input name="fill_opacity" value="{{ $sector->fill_opacity }}" required type="number" min="0" max="1" step="0.01" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label class="lg:col-span-1"><span class="block text-xs text-slate-400 mb-1">Order</span>

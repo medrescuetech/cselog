@@ -128,6 +128,21 @@ class HwrtV2Test extends TestCase
         $this->assertTrue($landmark->active);
     }
 
+    public function test_settings_forms_use_standard_colour_picker(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        foreach (['/settings/landmarks', '/settings/work-types'] as $uri) {
+            $this->actingAs($admin)
+                ->get($uri)
+                ->assertOk()
+                ->assertSee('hwrt-colour-picker.js')
+                ->assertSee('colourPicker(', false)
+                ->assertSee('type="range"', false)
+                ->assertDontSee('type="color"', false);
+        }
+    }
+
     public function test_static_map_overlays_can_be_hidden_and_apis_return_only_active_records(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
