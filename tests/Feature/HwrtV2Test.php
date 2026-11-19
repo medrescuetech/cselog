@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Landmark;
 use App\Models\Location;
+use App\Models\MapSector;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkType;
@@ -111,15 +112,116 @@ class HwrtV2Test extends TestCase
         $this->actingAs($admin)->post('/settings/landmarks', [
             'name' => 'Emergency Assembly Point',
             'category' => 'emergency',
+            'marker_type' => 'muster_point',
+            'colour' => '#22c55e',
             'easting' => 476250.123,
             'northing' => 7718450.456,
             'active' => '1',
+            'label_visible' => '1',
+            'rotation_deg' => '0',
         ])->assertRedirect();
 
         $landmark = Landmark::where('name', 'Emergency Assembly Point')->firstOrFail();
         $this->assertSame('manual', $landmark->source);
+        $this->assertSame('muster_point', $landmark->marker_type);
         $this->assertEqualsWithDelta(476250.123, $landmark->easting, 0.001);
         $this->assertTrue($landmark->active);
+    }
+
+    public function test_static_map_overlays_can_be_hidden_and_apis_return_only_active_records(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role' => 'user']);
+
+        $this->actingAs($admin)->post('/settings/landmarks', [
+            'name' => 'Main Access Road',
+            'category' => 'roads',
+            'marker_type' => 'road_label',
+            'colour' => '#f8fafc',
+            'easting' => 476300,
+            'northing' => 7718500,
+            'active' => '1',
+            'label_visible' => '1',
+            'rotation_deg' => '-24',
+        ])->assertRedirect();
+        $road = Landmark::where('name', 'Main Access Road')->firstOrFail();
+
+        $this->actingAs($admin)->post('/settings/map-sectors', [
+            'name' => 'Invalid Sector',
+            'colour' => '#38bdf8',
+            'fill_opacity' => '0.12',
+            'sort_order' => '10',
+            'active' => '1',
+            'geometry' => json_encode(['type' => 'Polygon', 'coordinates' => [[[476100, 7718400], [476200, 7718400]]]]),
+        ])->assertSessionHasErrors('geometry');
+
+        $this->actingAs($admin)->post('/settings/map-sectors', [
+            'name' => 'Sector A',
+            'colour' => '#38bdf8',
+            'fill_opacity' => '0.12',
+            'sort_order' => '10',
+            'active' => '1',
+            'geometry' => json_encode([
+                'type' => 'Polygon',
+                'coordinates' => [[[476100, 7718400], [476200, 7718400], [476200, 7718500], [476100, 7718400]]],
+            ]),
+        ])->assertRedirect();
+        $sector = MapSector::where('name', 'Sector A')->firstOrFail();
+
+        $this->actingAs($admin)->patch("/settings/landmarks/{$road->id}", [
+            'name' => 'Main Access Road',
+            'category' => 'roads',
+            'marker_type' => 'road_label',
+            'colour' => '#f8fafc',
+            'easting' => 476300,
+            'northing' => 7718500,
+            'active' => '0',
+            'label_visible' => '1',
+            'rotation_deg' => '-24',
+        ])->assertRedirect();
+        $this->actingAs($admin)->patch("/settings/map-sectors/{$sector->id}", [
+            'name' => 'Sector A',
+            'colour' => '#38bdf8',
+            'fill_opacity' => '0.12',
+            'sort_order' => '10',
+            'active' => '0',
+            'geometry' => json_encode($sector->geometry),
+        ])->assertRedirect();
+
+        Landmark::create([
+            'name' => 'Muster Point B',
+            'category' => 'muster',
+            'marker_type' => 'muster_point',
+            'colour' => '#22c55e',
+            'easting' => 476400,
+            'northing' => 7718600,
+            'active' => true,
+            'label_visible' => true,
+            'source' => 'manual',
+        ]);
+        MapSector::create([
+            'name' => 'Sector B',
+            'colour' => '#f97316',
+            'fill_opacity' => 0.15,
+            'sort_order' => 20,
+            'active' => true,
+            'geometry' => [
+                'type' => 'Polygon',
+                'coordinates' => [[[476300, 7718500], [476400, 7718500], [476400, 7718600], [476300, 7718500]]],
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/landmarks')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Muster Point B', 'marker_type' => 'muster_point'])
+            ->assertJsonMissing(['name' => 'Main Access Road']);
+
+        $this->actingAs($user)
+            ->getJson('/api/map-sectors')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Sector B'])
+            ->assertJsonMissing(['name' => 'Sector A']);
     }
 
     public function test_map_refresh_request_is_queued_without_running_inside_http_request(): void

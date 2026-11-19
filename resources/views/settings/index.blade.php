@@ -29,8 +29,8 @@
     </a>
 
     <a href="{{ route('settings.landmarks.index') }}" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">
-      <div class="text-lg font-semibold">Landmarks</div>
-      <p class="text-sm text-slate-400 mt-1">Add or edit key map landmarks manually, including by clicking the map.</p>
+      <div class="text-lg font-semibold">Map overlays</div>
+      <p class="text-sm text-slate-400 mt-1">Manage road labels, muster points, emergency markers and custom map sectors.</p>
     </a>
 
     <a href="#appearance" class="rounded-xl border border-slate-700 bg-slate-800/70 p-5 hover:bg-slate-800">

@@ -52,6 +52,7 @@ Route::middleware(['auth', 'password.changed', 'role:user'])->group(function () 
     Route::get('/api/layers', [MapController::class, 'layers'])->name('api.layers');
     Route::get('/api/areas', [MapController::class, 'areas'])->name('api.areas');
     Route::get('/api/landmarks', [MapController::class, 'landmarks'])->name('api.landmarks');
+    Route::get('/api/map-sectors', [MapController::class, 'sectors'])->name('api.map-sectors');
     Route::get('/api/locations', [LocationController::class, 'search'])->name('api.locations');
     Route::post('/api/locations', [LocationController::class, 'store'])->name('api.locations.store');
     Route::get('/api/locations/nearby', [LocationController::class, 'nearby'])->name('api.locations.nearby');
@@ -95,6 +96,8 @@ Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function ()
     Route::get('/settings/landmarks', [LandmarkSettingsController::class, 'index'])->name('settings.landmarks.index');
     Route::post('/settings/landmarks', [LandmarkSettingsController::class, 'store'])->name('settings.landmarks.store');
     Route::patch('/settings/landmarks/{landmark}', [LandmarkSettingsController::class, 'update'])->name('settings.landmarks.update');
+    Route::post('/settings/map-sectors', [LandmarkSettingsController::class, 'storeSector'])->name('settings.map-sectors.store');
+    Route::patch('/settings/map-sectors/{mapSector}', [LandmarkSettingsController::class, 'updateSector'])->name('settings.map-sectors.update');
 
     Route::get('/error', [ErrorLogController::class, 'index'])->name('errors.index');
     Route::get('/error/download', [ErrorLogController::class, 'download'])->name('errors.download');

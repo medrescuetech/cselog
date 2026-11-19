@@ -8,5 +8,11 @@ class Landmark extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['easting' => 'float', 'northing' => 'float', 'active' => 'bool'];
+    protected $casts = [
+        'easting' => 'float',
+        'northing' => 'float',
+        'active' => 'bool',
+        'label_visible' => 'bool',
+        'rotation_deg' => 'int',
+    ];
 }

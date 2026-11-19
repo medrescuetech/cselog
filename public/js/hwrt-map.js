@@ -5,6 +5,15 @@ window.HwrtMap = (function () {
   const toLL = (e, n) => L.latLng(-Number(n), Number(e));
   const fromLL = ll => ({ e: ll.lng, n: -ll.lat });
   const Z = { imagery: 10, prints: 20, plan: 30 };
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const title = value => String(value || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+  const markerGroupName = row => {
+    if (row.marker_type === 'road_label') return 'Road labels';
+    if (row.marker_type === 'muster_point') return 'Muster points';
+    if (row.marker_type === 'emergency') return 'Emergency markers';
+    const category = String(row.category || '').trim().toLowerCase();
+    return category && category !== 'landmark' ? title(category) : 'Landmarks';
+  };
 
   function hostFor(el) {
     return typeof el === 'string' ? document.getElementById(el) : el;
@@ -161,21 +170,46 @@ window.HwrtMap = (function () {
     if (opts.areas !== false) areas.addTo(map);
     overlays['Areas & structures'] = areas;
 
-    const landmarks = L.layerGroup();
-    if (opts.landmarks !== false) landmarks.addTo(map);
-    overlays['Landmark labels'] = landmarks;
+    let layerControl = null;
+    const markerGroups = new Map();
+    const staticGroup = name => {
+      if (!markerGroups.has(name)) {
+        const group = L.layerGroup();
+        if (opts.landmarks !== false) group.addTo(map);
+        markerGroups.set(name, group);
+        overlays[name] = group;
+        if (layerControl) layerControl.addOverlay(group, name);
+      }
+      return markerGroups.get(name);
+    };
+    for (const name of ['Landmarks', 'Road labels', 'Muster points', 'Emergency markers']) staticGroup(name);
+
+    const sectors = L.geoJSON(null, {
+      coordsToLatLng: c => toLL(c[0], c[1]),
+      style: f => ({
+        color: f.properties.colour || '#38bdf8',
+        weight: 2,
+        fill: true,
+        fillOpacity: Number.isFinite(Number(f.properties.fill_opacity)) ? Number(f.properties.fill_opacity) : 0.08,
+      }),
+      onEachFeature: (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' }),
+    });
+    if (opts.sectors !== false) sectors.addTo(map);
+    overlays['Map sectors'] = sectors;
 
     const pins = L.layerGroup().addTo(map);
     overlays['Open entries'] = pins;
 
     if (opts.layerControl !== false) {
-      L.control.layers(null, overlays, { collapsed: opts.collapsed ?? true }).addTo(map);
+      layerControl = L.control.layers(null, overlays, { collapsed: opts.collapsed ?? true }).addTo(map);
     }
 
     const api = {
       map,
       pins,
       overlays,
+      markerGroups,
+      sectors,
       toLL,
       fromLL,
       manifest: m,
@@ -206,18 +240,46 @@ window.HwrtMap = (function () {
         fetchJson('/api/landmarks', 'Landmarks')
           .then(rows => {
             for (const lm of rows) {
-              L.circleMarker(toLL(lm.easting, lm.northing), {
-                radius: 3,
+              const colour = /^#[0-9a-f]{6}$/i.test(String(lm.colour || '')) ? lm.colour : '#ff5f1f';
+              const point = toLL(lm.easting, lm.northing);
+              const group = staticGroup(markerGroupName(lm));
+              const marker = L.circleMarker(point, {
+                radius: lm.marker_type === 'muster_point' ? 6 : 4,
                 color: '#fff',
-                weight: 1,
-                fillColor: '#ff5f1f',
+                weight: 1.5,
+                fillColor: colour,
                 fillOpacity: 1,
-              }).bindTooltip(lm.name, { direction: 'top' }).addTo(landmarks);
+              }).bindTooltip(`${lm.name}${lm.category ? ` · ${title(lm.category)}` : ''}`, { direction: 'top' });
+              marker.addTo(group);
+
+              if (lm.label_visible) {
+                const rotation = Number(lm.rotation_deg) || 0;
+                const labelOffset = lm.marker_type === 'road_label' ? '-50%' : '-135%';
+                const icon = L.divIcon({
+                  className: '',
+                  iconSize: [0, 0],
+                  iconAnchor: [0, 0],
+                  html: `<div style="transform:translate(-50%,${labelOffset}) rotate(${rotation}deg);transform-origin:center;color:${colour};font:700 12px/1.1 system-ui,sans-serif;text-shadow:0 1px 3px #000,0 0 4px #000;white-space:nowrap;pointer-events:none">${esc(lm.name)}</div>`,
+                });
+                L.marker(point, { icon, interactive: false }).addTo(group);
+              }
             }
           })
           .catch(error => {
             console.error('HWRT map: landmarks unavailable', error);
-            notify(host, 'warning', 'Map loaded, but landmark labels are unavailable.', error);
+            notify(host, 'warning', 'Map loaded, but map markers are unavailable.', error);
+            throw error;
+          })
+      );
+    }
+
+    if (opts.sectors !== false) {
+      optionalLoads.push(
+        fetchJson('/api/map-sectors', 'Map sectors')
+          .then(gj => sectors.addData(gj))
+          .catch(error => {
+            console.error('HWRT map: sectors unavailable', error);
+            notify(host, 'warning', 'Map loaded, but map sectors are unavailable.', error);
             throw error;
           })
       );

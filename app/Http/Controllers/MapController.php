@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Landmark;
+use App\Models\MapSector;
 use Illuminate\Support\Facades\File;
 
 class MapController extends Controller
@@ -35,8 +36,27 @@ class MapController extends Controller
 
     public function landmarks()
     {
-        return response()->json(Landmark::where('active', true)->orderBy('name')
-            ->get(['id', 'name', 'category', 'easting', 'northing']));
+        return response()->json(Landmark::where('active', true)->orderBy('category')->orderBy('name')
+            ->get(['id', 'name', 'category', 'marker_type', 'colour', 'label_visible', 'rotation_deg', 'notes', 'easting', 'northing']));
+    }
+
+    public function sectors()
+    {
+        return response()->json([
+            'type' => 'FeatureCollection',
+            'crs_epsg' => 28350,
+            'features' => MapSector::where('active', true)->orderBy('sort_order')->orderBy('name')->get()->map(fn ($sector) => [
+                'type' => 'Feature',
+                'id' => $sector->id,
+                'properties' => [
+                    'name' => $sector->name,
+                    'colour' => $sector->colour,
+                    'fill_opacity' => $sector->fill_opacity,
+                    'notes' => $sector->notes,
+                ],
+                'geometry' => $sector->geometry,
+            ]),
+        ]);
     }
 
     private function manifest(): array
