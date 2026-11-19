@@ -232,6 +232,12 @@
       "title": "Cadastre (context)",
       "default_visible": false,
       "crs": "EPSG:28350"
+    },
+    {
+      "file": "features/site-c-roads.geojson",
+      "title": "Site C roads",
+      "default_visible": true,
+      "crs": "EPSG:28350"
     }
   ]
 }

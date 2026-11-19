@@ -29,6 +29,7 @@ VECTORS = [
     ("features/lease-boundaries.geojson", "Lease boundaries", False),
     ("features/project-boundaries-infrastructure.geojson", "Named infrastructure (142)", True),
     ("features/cadastre.geojson", "Cadastre (context)", False),
+    ("features/site-c-roads.geojson", "Site C roads", True),
 ]
 
 
@@ -41,7 +42,7 @@ def main():
     layers = []
     for pattern, group, title, visible, opacity in LAYER_RULES:
         for path in sorted(glob.glob(os.path.join(ROOT, pattern))):
-            rel = os.path.relpath(path, ROOT)
+            rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
             side = json.load(open(os.path.splitext(path)[0] + ".json"))
             layers.append({
                 "id": os.path.splitext(os.path.basename(path))[0],

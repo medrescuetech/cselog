@@ -26,6 +26,10 @@ class ImportSitemap extends Command
         'project-boundaries-infrastructure.geojson' => ['infrastructure', '#ff5f1f', true],
     ];
 
+    private const OPTIONAL_FILES = [
+        'site-c-roads.geojson' => ['road', '#e2e8f0', false],
+    ];
+
     /** First non-blank of the naming fields the PR25 layers use (Layer = CAD layer = structure name). */
     private function nameFor(array $p): string
     {
@@ -44,9 +48,12 @@ class ImportSitemap extends Command
         $dir = rtrim($this->option('path') ?: config('hwrt.sitemap_path'), '/').'/features';
         $collections = [];
 
-        foreach (self::FILES as $file => [$kind, $colour, $landmarks]) {
+        foreach (self::FILES + self::OPTIONAL_FILES as $file => [$kind, $colour, $landmarks]) {
             $path = "{$dir}/{$file}";
             if (! is_file($path)) {
+                if (array_key_exists($file, self::OPTIONAL_FILES)) {
+                    continue;
+                }
                 $this->error("missing required map data: {$path}");
 
                 return self::FAILURE;
@@ -82,7 +89,10 @@ class ImportSitemap extends Command
             foreach ($collections as $file => [$fc, $kind, $colour, $landmarks]) {
                 foreach ($fc['features'] as $i => $f) {
                     $p = $f['properties'] ?? [];
-                    $name = mb_substr($this->nameFor($p) ?: ucfirst($kind).' '.($i + 1), 0, 120);
+                    $label = $this->nameFor($p);
+                    $name = mb_substr($kind === 'road'
+                        ? ($label ?: 'Road').' '.($i + 1)
+                        : ($label ?: ucfirst($kind).' '.($i + 1)), 0, 120);
                     Area::updateOrCreate(
                         ['kind' => $kind, 'name' => $name],
                         ['geometry' => $f['geometry'], 'colour' => $colour, 'source' => $fc['source'] ?? $file,

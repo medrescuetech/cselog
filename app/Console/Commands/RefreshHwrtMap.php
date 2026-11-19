@@ -100,6 +100,10 @@ class RefreshHwrtMap extends Command
                     'map.source.cadastre',
                     'https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_ADM_Cadastre/FeatureServer/0'
                 ),
+                'site-c-roads.geojson' => Setting::value(
+                    'map.source.site_c_roads',
+                    'https://services-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/PR25_CON_MasterRoadDesignR08/FeatureServer/0'
+                ),
             ];
 
             foreach ($featureSources as $file => $url) {

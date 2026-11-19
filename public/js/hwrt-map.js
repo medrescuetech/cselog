@@ -170,6 +170,18 @@ window.HwrtMap = (function () {
     if (opts.areas !== false) areas.addTo(map);
     overlays['Areas & structures'] = areas;
 
+    const roads = L.geoJSON(null, {
+      coordsToLatLng: c => toLL(c[0], c[1]),
+      style: f => ({
+        color: f.properties.colour || '#e2e8f0',
+        weight: 1.5,
+        fill: false,
+      }),
+      onEachFeature: (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' }),
+    });
+    if (opts.roads !== false) roads.addTo(map);
+    overlays['Site C roads'] = roads;
+
     let layerControl = null;
     const markerGroups = new Map();
     const staticGroup = name => {
@@ -210,6 +222,7 @@ window.HwrtMap = (function () {
       overlays,
       markerGroups,
       sectors,
+      roads,
       toLL,
       fromLL,
       manifest: m,
@@ -223,10 +236,16 @@ window.HwrtMap = (function () {
 
     const optionalLoads = [];
 
-    if (opts.areas !== false) {
+    if (opts.areas !== false || opts.roads !== false) {
       optionalLoads.push(
         fetchJson('/api/areas', 'Site areas')
-          .then(gj => areas.addData(gj))
+          .then(gj => {
+            const features = Array.isArray(gj.features) ? gj.features : [];
+            const roadFeatures = features.filter(f => f?.properties?.kind === 'road');
+            const otherFeatures = features.filter(f => f?.properties?.kind !== 'road');
+            if (opts.areas !== false) areas.addData({ ...gj, features: otherFeatures });
+            if (opts.roads !== false) roads.addData({ ...gj, features: roadFeatures });
+          })
           .catch(error => {
             console.error('HWRT map: areas unavailable', error);
             notify(host, 'warning', 'Map loaded, but site areas could not be loaded.', error);

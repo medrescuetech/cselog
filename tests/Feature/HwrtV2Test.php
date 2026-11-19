@@ -293,4 +293,37 @@ class HwrtV2Test extends TestCase
         $this->assertSame(1, Artisan::call('sitemap:import', ['--path' => $path]));
         $this->assertDatabaseCount('areas', 0);
     }
+
+    public function test_sitemap_import_stores_local_road_features_when_available(): void
+    {
+        Storage::fake('local');
+        $path = Storage::disk('local')->path('testing-map-package');
+        $features = $path.DIRECTORY_SEPARATOR.'features';
+        mkdir($features, 0777, true);
+
+        foreach (['project-development-envelope.geojson', 'lease-boundaries.geojson', 'project-boundaries-infrastructure.geojson'] as $file) {
+            file_put_contents($features.'/'.$file, json_encode([
+                'type' => 'FeatureCollection',
+                'crs_epsg' => 28350,
+                'features' => [],
+            ]));
+        }
+        file_put_contents($features.'/site-c-roads.geojson', json_encode([
+            'type' => 'FeatureCollection',
+            'crs_epsg' => 28350,
+            'source' => 'test',
+            'features' => [[
+                'type' => 'Feature',
+                'properties' => ['Layer' => 'R-CENTRELINE', 'OBJECTID' => 1],
+                'geometry' => ['type' => 'LineString', 'coordinates' => [[476100, 7718400], [476200, 7718500]]],
+            ]],
+        ]));
+
+        $this->assertSame(0, Artisan::call('sitemap:import', ['--path' => $path]));
+        $this->assertDatabaseHas('areas', [
+            'kind' => 'road',
+            'name' => 'R-Centreline 1',
+            'source_ref' => '1',
+        ]);
+    }
 }
