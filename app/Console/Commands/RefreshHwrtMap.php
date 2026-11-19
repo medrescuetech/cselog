@@ -180,7 +180,7 @@ class RefreshHwrtMap extends Command
 
     private function discoverImageryService(string $python, string $root): string
     {
-        $query = (string) Setting::value('map.imagery_query', 'Imagery - Site C');
+        $query = (string) Setting::value('map.imagery_query', 'Imagery - Site C & F');
         $process = new Process([$python, $root.'/tools/fetch_arcgis.py', 'layers', '--grep', $query]);
         $process->setTimeout(120);
         $process->mustRun();
@@ -190,12 +190,15 @@ class RefreshHwrtMap extends Command
             $parts = explode("\t", trim($line));
             $url = trim((string) end($parts));
             if (str_contains($url, '/MapServer')) {
-                $matches[] = $url;
+                $matches[] = [
+                    'title' => trim((string) ($parts[1] ?? '')),
+                    'url' => $url,
+                ];
             }
         }
 
         if ($matches) {
-            return $matches[0];
+            return $this->newestImageryService($matches);
         }
 
         // Fallback to the source recorded with the packaged Site C/F imagery.
@@ -213,6 +216,77 @@ class RefreshHwrtMap extends Command
         }
 
         throw new \RuntimeException("Could not discover an ArcGIS imagery service matching '{$query}' and no packaged fallback source exists.");
+    }
+
+    private function newestImageryService(array $matches): string
+    {
+        $best = null;
+        $bestScore = PHP_INT_MIN;
+
+        foreach ($matches as $index => $match) {
+            $score = ($this->imageryTitleScore($match['title'] ?? '') * 1000) + $index;
+            if ($score > $bestScore) {
+                $best = $match;
+                $bestScore = $score;
+            }
+        }
+
+        return (string) ($best['url'] ?? '');
+    }
+
+    private function imageryTitleScore(string $title): int
+    {
+        $month = 'Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?';
+        $patterns = [
+            '/\b('.$month.')\s+(\d{1,2})(?:st|nd|rd|th)?\s*,?\s*(\d{4})\b/i',
+            '/\b(\d{1,2})(?:st|nd|rd|th)?\s+('.$month.')\s*,?\s*(\d{4})\b/i',
+            '/\b('.$month.')\s+(\d{4})\b/i',
+        ];
+        $score = 0;
+
+        foreach ($patterns as $index => $pattern) {
+            preg_match_all($pattern, $title, $matches, PREG_SET_ORDER);
+            foreach ($matches as $match) {
+                if ($index === 0) {
+                    $monthText = $match[1];
+                    $day = (int) $match[2];
+                    $year = (int) $match[3];
+                } elseif ($index === 1) {
+                    $day = (int) $match[1];
+                    $monthText = $match[2];
+                    $year = (int) $match[3];
+                } else {
+                    $monthText = $match[1];
+                    $day = 1;
+                    $year = (int) $match[2];
+                }
+
+                $monthNumber = $this->monthNumber($monthText);
+                if ($monthNumber !== null) {
+                    $score = max($score, ($year * 10000) + ($monthNumber * 100) + $day);
+                }
+            }
+        }
+
+        return $score;
+    }
+
+    private function monthNumber(string $month): ?int
+    {
+        return [
+            'jan' => 1,
+            'feb' => 2,
+            'mar' => 3,
+            'apr' => 4,
+            'may' => 5,
+            'jun' => 6,
+            'jul' => 7,
+            'aug' => 8,
+            'sep' => 9,
+            'oct' => 10,
+            'nov' => 11,
+            'dec' => 12,
+        ][strtolower(substr($month, 0, 3))] ?? null;
     }
 
     private function due(string $cadence, ?string $lastSuccess): bool
