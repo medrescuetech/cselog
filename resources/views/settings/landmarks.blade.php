@@ -21,13 +21,14 @@
   <div class="grid gap-4 xl:grid-cols-[1fr_460px]">
     <div class="space-y-3">
       <div class="flex flex-wrap gap-2">
-        <button type="button" @click="mode='marker'" :class="mode === 'marker' ? 'bg-emerald-700' : 'bg-slate-800 hover:bg-slate-700'" class="rounded-lg px-3 py-2 text-sm font-semibold">Place marker / label</button>
-        <button type="button" @click="mode='sector'" :class="mode === 'sector' ? 'bg-sky-700' : 'bg-slate-800 hover:bg-slate-700'" class="rounded-lg px-3 py-2 text-sm font-semibold">Draw sector</button>
+        <button type="button" @click="startMarkerMode" :class="mode === 'marker' ? 'bg-emerald-700' : 'bg-slate-800 hover:bg-slate-700'" class="rounded-lg px-3 py-2 text-sm font-semibold">Place marker / label</button>
+        <button type="button" @click="startSectorMode" :class="mode === 'sector' ? 'bg-sky-700' : 'bg-slate-800 hover:bg-slate-700'" class="rounded-lg px-3 py-2 text-sm font-semibold">Draw sector</button>
       </div>
       <div id="landmark-map" class="rounded-xl border border-slate-700 overflow-hidden"></div>
       <div class="text-xs text-slate-500" x-show="mode === 'marker'">Click the map to fill the marker coordinates.</div>
       <div class="text-xs text-slate-500" x-show="mode === 'sector'">
-        Click at least three points to draw a sector. Vertices: <b x-text="vertices.length"></b>
+        Click along the sector boundary, then press Finish or double-click to close it. Vertices: <b x-text="vertices.length"></b>
+        <span x-show="sectorStatus" class="text-sky-300" x-text="sectorStatus"></span>
       </div>
     </div>
 
@@ -74,9 +75,9 @@
           <input name="name" value="{{ old('name') }}" required maxlength="120" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
         <div class="grid grid-cols-3 gap-2">
           <label><span class="text-xs text-slate-400">Colour</span>
-            <input name="colour" x-model="sectorColour" type="color" class="mt-1 h-10 w-full rounded-lg bg-slate-900 border border-slate-700 px-1 py-1"></label>
+            <input name="colour" x-model="sectorColour" @input="redrawSector" type="color" class="mt-1 h-10 w-full rounded-lg bg-slate-900 border border-slate-700 px-1 py-1"></label>
           <label><span class="text-xs text-slate-400">Opacity</span>
-            <input name="fill_opacity" x-model="sectorOpacity" type="number" min="0" max="1" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
+            <input name="fill_opacity" x-model="sectorOpacity" @input="redrawSector" type="number" min="0" max="1" step="0.01" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
           <label><span class="text-xs text-slate-400">Order</span>
             <input name="sort_order" value="{{ old('sort_order', 0) }}" type="number" min="-999" max="999" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
         </div>
@@ -84,11 +85,18 @@
           <textarea name="notes" rows="2" maxlength="1000" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">{{ old('notes') }}</textarea></label>
         <input type="hidden" name="geometry" x-model="sectorGeometry">
         <input type="hidden" name="active" value="1">
-        <div class="flex gap-2">
-          <button type="button" @click="undoVertex" class="flex-1 rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">Undo point</button>
-          <button type="button" @click="clearVertices" class="flex-1 rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">Clear</button>
+        <div class="grid grid-cols-[1fr_110px] gap-2 items-end rounded-lg bg-slate-900/50 p-3">
+          <label class="flex gap-2 items-center text-sm"><input type="checkbox" x-model="snapToRoads"> Snap to Site C roads</label>
+          <label><span class="block text-xs text-slate-400 mb-1">Snap metres</span>
+            <input x-model="snapTolerance" type="number" min="1" max="50" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
         </div>
-        <button :disabled="vertices.length < 3" class="w-full rounded-lg bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:text-slate-500 px-4 py-2 font-semibold">Add sector</button>
+        <div class="grid grid-cols-4 gap-2">
+          <button type="button" @click="undoVertex" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">Undo</button>
+          <button type="button" @click="clearVertices" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">Clear</button>
+          <button type="button" @click="finishSector" class="rounded-lg bg-sky-700 hover:bg-sky-600 px-3 py-2">Finish</button>
+          <button type="button" @click="cancelSector" class="rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-2">Cancel</button>
+        </div>
+        <button :disabled="!sectorFinished" class="w-full rounded-lg bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:text-slate-500 px-4 py-2 font-semibold">Add sector</button>
       </form>
     </div>
   </div>
@@ -164,10 +172,20 @@ function landmarkSettings() {
     mode: 'marker',
     e: '', n: '', markerType: @js(old('marker_type', 'landmark')), category: @js(old('category', 'Landmarks')),
     mapObj: null, marker: null,
-    vertices: [], sectorLayer: null, sectorGeometry: '', sectorColour: @js(old('colour', '#38bdf8')), sectorOpacity: @js(old('fill_opacity', 0.08)),
+    vertices: [], sectorLayer: null, cursorLayer: null, cursorPoint: null,
+    sectorGeometry: '', sectorColour: @js(old('colour', '#38bdf8')), sectorOpacity: @js(old('fill_opacity', 0.08)),
+    sectorDrawing: false, sectorFinished: false, sectorStatus: '',
+    clickTimer: null, pendingSectorPoint: null,
+    snapToRoads: true, snapTolerance: 8,
     async init() {
       this.mapObj = await HwrtMap.create('landmark-map', { skipPrints: true, collapsed: true });
-      this.mapObj.map.on('click', event => this.mode === 'sector' ? this.addVertex(event.latlng) : this.setPoint(event.latlng));
+      this.mapObj.map.on('click', event => this.mode === 'sector' ? this.queueSectorClick(event.latlng) : this.setPoint(event.latlng));
+      this.mapObj.map.on('mousemove', event => this.updateCursor(event.latlng));
+      this.mapObj.map.on('dblclick', event => {
+        if (this.mode !== 'sector') return;
+        event.originalEvent.preventDefault();
+        this.finishSector(false);
+      });
     },
     setPoint(latlng) {
       const p = this.mapObj.fromLL(latlng);
@@ -176,31 +194,188 @@ function landmarkSettings() {
       if (!this.marker) this.marker = L.marker(latlng).addTo(this.mapObj.map);
       else this.marker.setLatLng(latlng);
     },
+    startMarkerMode() {
+      this.mode = 'marker';
+      this.sectorDrawing = false;
+      this.sectorStatus = '';
+      this.clearPendingClick(false);
+      this.mapObj?.map?.doubleClickZoom?.enable();
+      this.setMapCursor();
+      this.redrawCursor();
+    },
+    startSectorMode() {
+      this.mode = 'sector';
+      this.sectorDrawing = !this.sectorFinished;
+      this.sectorStatus = this.sectorFinished
+        ? 'Sector is closed. Use Undo to continue editing or Add sector to save.'
+        : 'Click along the boundary line, then use Finish.';
+      this.mapObj?.map?.doubleClickZoom?.disable();
+      this.setMapCursor();
+      this.redrawSector();
+    },
+    queueSectorClick(latlng) {
+      if (!this.sectorDrawing) return;
+      this.clearPendingClick(false);
+      this.pendingSectorPoint = latlng;
+      this.clickTimer = setTimeout(() => {
+        const point = this.pendingSectorPoint;
+        this.pendingSectorPoint = null;
+        this.clickTimer = null;
+        this.addVertex(point);
+      }, 350);
+    },
+    clearPendingClick(commit) {
+      if (this.clickTimer) clearTimeout(this.clickTimer);
+      const point = this.pendingSectorPoint;
+      this.clickTimer = null;
+      this.pendingSectorPoint = null;
+      if (commit && point) this.addVertex(point);
+    },
+    updateCursor(latlng) {
+      if (this.mode !== 'sector' || !this.sectorDrawing) return;
+      const snapped = this.snapPoint(latlng);
+      this.cursorPoint = snapped.latlng;
+      this.sectorStatus = snapped.snapped
+        ? `Snapped to road linework. Vertices: ${this.vertices.length}`
+        : `Drawing boundary line. Vertices: ${this.vertices.length}`;
+      this.redrawCursor();
+    },
     addVertex(latlng) {
-      const p = this.mapObj.fromLL(latlng);
+      if (!latlng || !this.sectorDrawing) return;
+      const snapped = this.snapPoint(latlng);
+      const p = this.mapObj.fromLL(snapped.latlng);
       this.vertices.push([Number(p.e.toFixed(3)), Number(p.n.toFixed(3))]);
+      this.sectorFinished = false;
+      this.sectorGeometry = '';
+      this.sectorStatus = `${this.vertices.length} point${this.vertices.length === 1 ? '' : 's'} added.`;
       this.redrawSector();
     },
     undoVertex() {
+      this.clearPendingClick(false);
+      if (this.sectorFinished) {
+        this.sectorFinished = false;
+        this.sectorDrawing = true;
+        this.sectorGeometry = '';
+        this.mapObj?.map?.doubleClickZoom?.disable();
+      }
       this.vertices.pop();
+      this.sectorStatus = this.vertices.length ? 'Removed the last point.' : 'Boundary cleared.';
+      this.setMapCursor();
       this.redrawSector();
     },
     clearVertices() {
+      this.clearPendingClick(false);
       this.vertices = [];
+      this.cursorPoint = null;
+      this.sectorFinished = false;
+      this.sectorDrawing = this.mode === 'sector';
+      this.sectorGeometry = '';
+      this.sectorStatus = 'Boundary cleared. Click along the sector line to restart.';
+      if (this.sectorDrawing) this.mapObj?.map?.doubleClickZoom?.disable();
+      this.setMapCursor();
+      this.redrawSector();
+    },
+    finishSector(commitPending = true) {
+      if (this.mode !== 'sector') return;
+      this.clearPendingClick(commitPending);
+      if (this.vertices.length < 3) {
+        this.sectorStatus = 'Add at least three boundary points before finishing.';
+        return;
+      }
+      this.sectorDrawing = false;
+      this.sectorFinished = true;
+      this.cursorPoint = null;
+      this.sectorGeometry = JSON.stringify({ type: 'Polygon', coordinates: [[...this.vertices, this.vertices[0]]] });
+      this.sectorStatus = 'Sector closed. Review it, then Add sector or Undo to continue editing.';
+      this.mapObj?.map?.doubleClickZoom?.enable();
+      this.setMapCursor();
+      this.redrawSector();
+      this.redrawCursor();
+    },
+    cancelSector() {
+      this.clearPendingClick(false);
+      this.vertices = [];
+      this.cursorPoint = null;
+      this.sectorGeometry = '';
+      this.sectorDrawing = false;
+      this.sectorFinished = false;
+      this.startMarkerMode();
       this.redrawSector();
     },
     redrawSector() {
       if (this.sectorLayer) this.sectorLayer.remove();
       this.sectorLayer = null;
-      this.sectorGeometry = '';
-      if (!this.vertices.length) return;
-      const points = this.vertices.map(v => this.mapObj.toLL(v[0], v[1]));
-      this.sectorLayer = this.vertices.length >= 3
-        ? L.polygon(points, { color: this.sectorColour, weight: 2, fillOpacity: Number(this.sectorOpacity) }).addTo(this.mapObj.map)
-        : L.polyline(points, { color: this.sectorColour, weight: 2 }).addTo(this.mapObj.map);
-      if (this.vertices.length >= 3) {
-        this.sectorGeometry = JSON.stringify({ type: 'Polygon', coordinates: [[...this.vertices, this.vertices[0]]] });
+      if (!this.vertices.length) {
+        this.redrawCursor();
+        return;
       }
+      this.sectorLayer = L.layerGroup().addTo(this.mapObj.map);
+      const points = this.vertices.map(v => this.mapObj.toLL(v[0], v[1]));
+      if (this.sectorFinished) {
+        L.polygon(points, { color: this.sectorColour, weight: 2, fillOpacity: Number(this.sectorOpacity) }).addTo(this.sectorLayer);
+      } else if (points.length > 1) {
+        L.polyline(points, { color: this.sectorColour, weight: 3 }).addTo(this.sectorLayer);
+      }
+      for (const point of points) {
+        L.circleMarker(point, { radius: 4, color: '#fff', weight: 1, fillColor: this.sectorColour, fillOpacity: 1 }).addTo(this.sectorLayer);
+      }
+      this.redrawCursor();
+    },
+    redrawCursor() {
+      if (this.cursorLayer) this.cursorLayer.remove();
+      this.cursorLayer = null;
+      if (!this.sectorDrawing || !this.cursorPoint) return;
+      this.cursorLayer = L.layerGroup().addTo(this.mapObj.map);
+      const last = this.vertices.at(-1);
+      if (last) {
+        L.polyline([this.mapObj.toLL(last[0], last[1]), this.cursorPoint], {
+          color: this.sectorColour,
+          weight: 2,
+          dashArray: '6 6',
+        }).addTo(this.cursorLayer);
+      }
+      L.circleMarker(this.cursorPoint, { radius: 3, color: this.sectorColour, weight: 2, fillOpacity: 0 }).addTo(this.cursorLayer);
+    },
+    setMapCursor() {
+      const container = this.mapObj?.map?.getContainer?.();
+      if (container) container.style.cursor = this.sectorDrawing ? 'crosshair' : '';
+    },
+    snapPoint(latlng) {
+      const roads = this.mapObj?.roads;
+      if (!this.snapToRoads || !roads || typeof roads.eachLayer !== 'function') {
+        return { latlng, snapped: false };
+      }
+      const p = this.mapObj.fromLL(latlng);
+      const tolerance = Number(this.snapTolerance) || 8;
+      let best = null;
+      roads.eachLayer(layer => {
+        const lines = this.latLngLines(layer.getLatLngs ? layer.getLatLngs() : []);
+        for (const line of lines) {
+          for (let i = 1; i < line.length; i++) {
+            const a = this.mapObj.fromLL(line[i - 1]);
+            const b = this.mapObj.fromLL(line[i]);
+            const candidate = this.closestOnSegment(p, a, b);
+            if (candidate.distance <= tolerance && (!best || candidate.distance < best.distance)) {
+              best = candidate;
+            }
+          }
+        }
+      });
+      return best ? { latlng: this.mapObj.toLL(best.e, best.n), snapped: true } : { latlng, snapped: false };
+    },
+    latLngLines(value) {
+      if (!Array.isArray(value)) return [];
+      if (value.length && typeof value[0].lat === 'number') return [value];
+      return value.flatMap(child => this.latLngLines(child));
+    },
+    closestOnSegment(p, a, b) {
+      const dx = b.e - a.e;
+      const dy = b.n - a.n;
+      const lengthSquared = (dx * dx) + (dy * dy);
+      const t = lengthSquared ? Math.max(0, Math.min(1, (((p.e - a.e) * dx) + ((p.n - a.n) * dy)) / lengthSquared)) : 0;
+      const e = a.e + (t * dx);
+      const n = a.n + (t * dy);
+      return { e, n, distance: Math.hypot(p.e - e, p.n - n) };
     },
   };
 }
