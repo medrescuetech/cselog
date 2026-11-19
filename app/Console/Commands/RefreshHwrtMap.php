@@ -62,6 +62,11 @@ class RefreshHwrtMap extends Command
                 throw new \RuntimeException('Could not copy the current map package into staging.');
             }
 
+            $sourceTools = base_path('sitemap/tools');
+            if (! is_dir($sourceTools) || ! File::copyDirectory($sourceTools, $stage.'/tools')) {
+                throw new \RuntimeException('Could not stage the current map helper tools.');
+            }
+
             $downloads = $stage.'/.refresh-downloads';
             if (! mkdir($downloads, 0775, true) && ! is_dir($downloads)) {
                 throw new \RuntimeException("Could not create {$downloads}");
