@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\Landmark;
 use App\Models\MapSector;
+use App\Models\Setting;
 use Illuminate\Support\Facades\File;
 
 class MapController extends Controller
@@ -72,7 +73,22 @@ class MapController extends Controller
             $v['url'] = $base.'/'.$v['file'];
             unset($v['source']);
         }
+        $m['default_view'] = $this->defaultView();
 
         return $m;
+    }
+
+    private function defaultView(): ?array
+    {
+        $view = json_decode((string) Setting::value('map.default_view', ''), true);
+        if (! is_array($view)) return null;
+
+        $easting = filter_var($view['easting'] ?? null, FILTER_VALIDATE_FLOAT);
+        $northing = filter_var($view['northing'] ?? null, FILTER_VALIDATE_FLOAT);
+        $zoom = filter_var($view['zoom'] ?? null, FILTER_VALIDATE_FLOAT);
+
+        return $easting === false || $northing === false || $zoom === false
+            ? null
+            : ['easting' => $easting, 'northing' => $northing, 'zoom' => $zoom];
     }
 }

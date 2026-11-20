@@ -77,6 +77,7 @@ Route::middleware(['auth', 'password.changed', 'role:admin'])->group(function ()
     Route::patch('/settings/work-tags/{workTag}', [WorkTagController::class, 'update'])->name('settings.work-tags.update');
 
     Route::post('/settings/map', [MapSettingsController::class, 'update'])->name('settings.map.update');
+    Route::post('/settings/map/view', [MapSettingsController::class, 'updateView'])->name('settings.map.view');
     Route::post('/settings/map/refresh', [MapSettingsController::class, 'requestRefresh'])->name('settings.map.refresh');
 
     Route::get('/settings/locations', [LocationSettingsController::class, 'index'])->name('settings.locations.index');

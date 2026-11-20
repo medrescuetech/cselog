@@ -143,6 +143,30 @@ class HwrtV2Test extends TestCase
         }
     }
 
+    public function test_admin_can_save_default_map_view(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role' => 'user']);
+
+        $this->actingAs($user)
+            ->postJson('/settings/map/view', ['easting' => 476250.5, 'northing' => 7718450.25, 'zoom' => 1.5])
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->postJson('/settings/map/view', ['easting' => 476250.5, 'northing' => 7718450.25, 'zoom' => 1.5])
+            ->assertOk()
+            ->assertJsonPath('default_view.easting', 476250.5)
+            ->assertJsonPath('default_view.northing', 7718450.25)
+            ->assertJsonPath('default_view.zoom', 1.5);
+
+        $this->actingAs($user)
+            ->getJson('/api/layers')
+            ->assertOk()
+            ->assertJsonPath('default_view.easting', 476250.5)
+            ->assertJsonPath('default_view.northing', 7718450.25)
+            ->assertJsonPath('default_view.zoom', 1.5);
+    }
+
     public function test_static_map_overlays_can_be_hidden_and_apis_return_only_active_records(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

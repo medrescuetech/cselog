@@ -57,6 +57,38 @@ window.HwrtMap = (function () {
       && Number(extent.ymax) > Number(extent.ymin);
   }
 
+  function validView(view, extent) {
+    if (!view) return null;
+    const easting = Number(view.easting);
+    const northing = Number(view.northing);
+    const zoom = Number(view.zoom);
+    if (!Number.isFinite(easting) || !Number.isFinite(northing) || !Number.isFinite(zoom)) return null;
+    if (validExtent(extent)) {
+      const margin = 500;
+      if (easting < Number(extent.xmin) - margin || easting > Number(extent.xmax) + margin
+        || northing < Number(extent.ymin) - margin || northing > Number(extent.ymax) + margin) return null;
+    }
+    return { easting, northing, zoom };
+  }
+
+  function readStoredView(storageKey, extent) {
+    if (!storageKey) return null;
+    try {
+      return validView(JSON.parse(localStorage.getItem(storageKey) || 'null'), extent);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStoredView(storageKey, view) {
+    if (!storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(view));
+    } catch {
+      return;
+    }
+  }
+
   async function create(el, opts = {}) {
     const host = hostFor(el);
     if (!host) throw new Error('Map container was not found.');
@@ -152,7 +184,11 @@ window.HwrtMap = (function () {
       toLL(preferred.extent.xmin, preferred.extent.ymin),
       toLL(preferred.extent.xmax, preferred.extent.ymax)
     );
+    const viewStorageKey = opts.viewKey ? `hwrt.map.view.${opts.viewKey}` : null;
+    let siteDefaultView = validView(m.default_view, ext);
     map.fitBounds(preferredBounds);
+    const initialView = readStoredView(viewStorageKey, ext) || siteDefaultView;
+    if (initialView) map.setView(toLL(initialView.easting, initialView.northing), initialView.zoom);
     host.dataset.hwrtMapState = 'basemap-positioned';
     requestAnimationFrame(() => map.invalidateSize({ pan: false }));
 
@@ -216,6 +252,15 @@ window.HwrtMap = (function () {
       layerControl = L.control.layers(null, overlays, { collapsed: opts.collapsed ?? true }).addTo(map);
     }
 
+    let suppressViewSave = false;
+    const currentView = () => {
+      const centre = fromLL(map.getCenter());
+      return {
+        easting: Number(centre.e.toFixed(3)),
+        northing: Number(centre.n.toFixed(3)),
+        zoom: Number(map.getZoom().toFixed(3)),
+      };
+    };
     const api = {
       map,
       pins,
@@ -226,10 +271,33 @@ window.HwrtMap = (function () {
       toLL,
       fromLL,
       manifest: m,
+      defaultView: siteDefaultView,
+      currentView,
+      setDefaultView: view => {
+        siteDefaultView = validView(view, ext);
+        api.defaultView = siteDefaultView;
+      },
       setPlanOpacity: v => plan.forEach(l => l.setOpacity(v)),
       focus: (e, n, zoom = 1) => map.setView(toLL(e, n), zoom),
+      home: () => {
+        if (viewStorageKey) {
+          suppressViewSave = true;
+          try {
+            localStorage.removeItem(viewStorageKey);
+          } catch {
+          }
+        }
+        if (siteDefaultView) map.setView(toLL(siteDefaultView.easting, siteDefaultView.northing), siteDefaultView.zoom);
+        else map.fitBounds(preferredBounds);
+        setTimeout(() => { suppressViewSave = false; }, 400);
+      },
       optionalReady: null,
     };
+    if (viewStorageKey) {
+      map.on('moveend', () => {
+        if (!suppressViewSave) writeStoredView(viewStorageKey, currentView());
+      });
+    }
 
     // Useful for diagnostics and browser acceptance tests; no application state depends on it.
     host._hwrtMapApi = api;

@@ -25,6 +25,10 @@
 <div class="absolute left-3 bottom-3 z-[1000] font-mono text-xs bg-slate-900/90 rounded px-2 py-1" id="coords">E — N —</div>
 <div class="absolute right-3 bottom-3 z-[1000] bg-slate-900/90 rounded px-3 py-2 text-xs flex items-center gap-2">
   <label>plan <input id="planop" type="range" min="0" max="1" step="0.05" value="1" class="align-middle w-28"></label>
+  <button id="reset-view" type="button" class="rounded bg-slate-700 hover:bg-slate-600 px-2 py-1">Reset view</button>
+  @if (auth()->user()?->isAdmin())
+    <button id="save-view" type="button" class="rounded bg-sky-700 hover:bg-sky-600 px-2 py-1">Save site view</button>
+  @endif
   <span id="count" class="ml-2 font-semibold"></span>
 </div>
 @endsection
@@ -53,10 +57,34 @@
   try {
     if (!window.L) throw new Error('Leaflet did not load. Check network/CDN access.');
 
-    const cm = await HwrtMap.create('map', { collapsed: false });
+    const cm = await HwrtMap.create('map', { collapsed: false, viewKey: 'main' });
     const { map, pins, toLL, fromLL } = cm;
 
     document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
+    document.getElementById('reset-view').addEventListener('click', () => cm.home());
+    document.getElementById('save-view')?.addEventListener('click', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const response = await fetch('{{ route('settings.map.view') }}', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': window.csrf,
+          },
+          body: JSON.stringify(cm.currentView()),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
+        cm.setDefaultView(result.default_view);
+        showNotice('Default site map view saved.', false);
+      } catch (error) {
+        showNotice(`Could not save the site map view. ${error.message || ''}`, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
     map.on('mousemove', e => {
       const { e: E, n: N } = fromLL(e.latlng);
       document.getElementById('coords').textContent = `E ${E.toFixed(1)}  N ${N.toFixed(1)}  MGA50`;

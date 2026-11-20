@@ -22,6 +22,24 @@ class MapSettingsController extends Controller
         return back()->with('status', 'Map refresh settings updated.');
     }
 
+    public function updateView(Request $request)
+    {
+        $data = $request->validate([
+            'easting' => 'required|numeric|between:-10000000,10000000',
+            'northing' => 'required|numeric|between:-10000000,10000000',
+            'zoom' => 'required|numeric|between:-5,4',
+        ]);
+
+        $view = [
+            'easting' => round((float) $data['easting'], 3),
+            'northing' => round((float) $data['northing'], 3),
+            'zoom' => round((float) $data['zoom'], 3),
+        ];
+        Setting::put('map.default_view', json_encode($view));
+
+        return response()->json(['saved' => true, 'default_view' => $view]);
+    }
+
     public function requestRefresh()
     {
         Setting::put('map.refresh_requested_at', now()->toIso8601String());
