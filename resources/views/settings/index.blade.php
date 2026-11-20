@@ -84,7 +84,7 @@
 
     @php
       $cadence = \App\Models\Setting::value('map.refresh_cadence', 'manual');
-      $query = \App\Models\Setting::value('map.imagery_query', 'Imagery - Site C');
+      $query = \App\Models\Setting::value('map.imagery_query', 'Imagery - Site C & F');
       $override = \App\Models\Setting::value('map.imagery_service_override', '');
       $lastAttempt = \App\Models\Setting::value('map.last_attempt_at', '');
       $lastSuccess = \App\Models\Setting::value('map.last_success_at', '');

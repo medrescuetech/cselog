@@ -24,6 +24,8 @@ class ImportSitemap extends Command
         'project-development-envelope.geojson' => ['boundary', '#ffd400', false],
         'lease-boundaries.geojson' => ['lease', '#00b0ff', false],
         'project-boundaries-infrastructure.geojson' => ['infrastructure', '#ff5f1f', true],
+        'ga-areas.geojson' => ['ga', '#d336c6', true],
+        'site-c-roads.geojson' => ['road', '#8d9db5', true],
     ];
 
     /** First non-blank of the naming fields the PR25 layers use (Layer = CAD layer = structure name). */

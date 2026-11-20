@@ -58,6 +58,8 @@ plan layers above are the preferred, separable set.
 | `project-development-envelope.geojson` | `PR25_BDY_ProjectBoundaries/3` | site outline |
 | `lease-boundaries.geojson` | `PR25_BDY_LeaseBoundaries/0` — 26 polygons | zones |
 | `cadastre.geojson` | `PR25_ADM_Cadastre/0` — 1197 lots | context only |
+| `ga-areas.geojson` | Handley Surveys "PROJECT GA AREA & PAR MAP — SITE C" print, digitised — GA1–GA13 polygons (no GA5/GA6 on the drawing) | seed for areas / landmarks |
+| `site-c-roads.geojson` | "Identification of roads on Site C" TMP mark-up, digitised — West Road, Urea Avenue, North Road, Ammonia Avenue, ASU Lane, CCR Lane, South Road, Utility Avenue, East Road | seed for areas / landmarks |
 
 ### `*.pdf` — originals as received
 - `scjv-site-map-2026-08-21_0000-GB-A-60002-3.pdf` — SCJV site map drawing 0000-GB-A-60002 rev 3.
