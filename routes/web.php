@@ -25,6 +25,7 @@ Route::post('/password/change', [AuthController::class, 'changePassword'])->name
 
 Route::middleware(['auth', 'password.changed', 'role:user'])->group(function () {
     Route::get('/', fn () => redirect()->route('board'));
+    Route::get('/demo', fn () => redirect()->route('board'))->name('demo');
     Route::get('/board', [EntryController::class, 'board'])->name('board');
     Route::get('/map', [MapController::class, 'index'])->name('map');
 

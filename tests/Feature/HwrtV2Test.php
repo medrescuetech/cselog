@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
+use App\Models\Entry;
 use App\Models\Landmark;
 use App\Models\Location;
 use App\Models\MapSector;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\WorkTag;
 use App\Models\WorkType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -165,6 +168,75 @@ class HwrtV2Test extends TestCase
             ->assertJsonPath('default_view.easting', 476250.5)
             ->assertJsonPath('default_view.northing', 7718450.25)
             ->assertJsonPath('default_view.zoom', 1.5);
+    }
+
+    public function test_demo_dataset_can_be_seeded_and_removed(): void
+    {
+        $this->artisan('hwrt:demo-seed', ['--password' => true])
+            ->expectsQuestion('Demo user password (minimum 12 characters)', 'demo-secret-12345')
+            ->assertExitCode(0);
+        $firstDemoAdminId = User::where('username', 'demo.admin')->value('id');
+
+        $realUser = User::create([
+            'name' => 'Real User', 'username' => 'real.user', 'email' => 'real@example.test',
+            'password' => 'real-secret-12345', 'role' => 'user', 'active' => true,
+        ]);
+        $realArea = Area::create([
+            'name' => 'Real Area', 'kind' => 'zone', 'geometry' => [
+                'type' => 'Polygon', 'coordinates' => [[[1, 1], [2, 1], [2, 2], [1, 1]]],
+            ], 'source' => 'manual', 'active' => true,
+        ]);
+        $realLocation = Location::create([
+            'name' => 'Real Location', 'code' => 'REAL-01', 'easting' => 476000,
+            'northing' => 7718000, 'area_id' => $realArea->id, 'status' => 'active',
+            'verified' => true, 'created_by' => $realUser->id,
+        ]);
+        $realTag = WorkTag::create(['name' => 'Real tag', 'active' => true]);
+        $realEntry = Entry::create([
+            'location_id' => $realLocation->id, 'location_label' => $realLocation->name,
+            'easting' => $realLocation->easting, 'northing' => $realLocation->northing,
+            'area_id' => $realArea->id, 'work_type_id' => WorkType::where('name', 'Inspection')->value('id'),
+            'notes' => 'Real entry', 'permit_no' => 'REAL-001', 'status' => 'open',
+            'opened_at' => now(), 'opened_by' => $realUser->id,
+        ]);
+
+        $this->artisan('hwrt:demo-seed', ['--password' => true])
+            ->expectsQuestion('Demo user password (minimum 12 characters)', 'demo-secret-12345')
+            ->assertExitCode(0);
+        $this->assertNotSame($firstDemoAdminId, User::where('username', 'demo.admin')->value('id'));
+
+        $this->assertTrue(User::where('username', 'demo.admin')->exists());
+        $this->assertSame(5, Location::where('name', 'like', '[DEMO]%')->count());
+        $this->assertSame(5, Landmark::where('source', 'demo')->count());
+        $this->assertSame(2, MapSector::where('name', 'like', '[DEMO]%')->count());
+        $this->assertSame(2, Area::where('source', 'demo')->count());
+        $this->assertSame(11, Entry::where('permit_no', 'like', 'DEMO-%')->count());
+
+        $demoUser = User::where('username', 'demo.logger')->firstOrFail();
+        $this->actingAs($demoUser)
+            ->getJson('/api/open')
+            ->assertOk()
+            ->assertJsonFragment(['permit_no' => 'DEMO-1001']);
+        $this->actingAs($demoUser)
+            ->get('/demo')
+            ->assertRedirect('/board');
+
+        $this->artisan('hwrt:demo-clear', ['--force' => true])
+            ->assertExitCode(0);
+
+        $this->assertFalse(User::where('username', 'like', 'demo.%')->exists());
+        $this->assertFalse(Location::where('name', 'like', '[DEMO]%')->exists());
+        $this->assertFalse(Landmark::where('source', 'demo')->exists());
+        $this->assertFalse(MapSector::where('name', 'like', '[DEMO]%')->exists());
+        $this->assertFalse(Area::where('source', 'demo')->exists());
+        $this->assertFalse(WorkTag::where('name', 'like', 'DEMO:%')->exists());
+        $this->assertFalse(Entry::where('permit_no', 'like', 'DEMO-%')->exists());
+        $this->assertTrue(WorkType::where('name', 'Confined Space Entry')->exists());
+        $this->assertTrue(User::whereKey($realUser->id)->exists());
+        $this->assertTrue(Location::whereKey($realLocation->id)->exists());
+        $this->assertTrue(Area::whereKey($realArea->id)->exists());
+        $this->assertTrue(WorkTag::whereKey($realTag->id)->exists());
+        $this->assertTrue(Entry::whereKey($realEntry->id)->exists());
     }
 
     public function test_static_map_overlays_can_be_hidden_and_apis_return_only_active_records(): void

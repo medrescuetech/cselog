@@ -18,6 +18,7 @@ return [
 
     'duplicate_radius_m' => (float) env('HWRT_DUPLICATE_RADIUS_M', 15),
     'poll_seconds' => (int) env('HWRT_POLL_SECONDS', 15),
+    'demo_password' => env('HWRT_DEMO_PASSWORD'),
 
     'bootstrap_admin' => [
         'name' => env('HWRT_ADMIN_NAME', 'Admin'),
