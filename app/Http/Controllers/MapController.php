@@ -62,17 +62,28 @@ class MapController extends Controller
 
     private function manifest(): array
     {
-        $path = rtrim(config('hwrt.sitemap_path'), '/').'/manifest.json';
+        $root = rtrim(config('hwrt.sitemap_path'), '/');
+        $path = $root.'/manifest.json';
         $m = File::exists($path) ? json_decode(File::get($path), true) : ['rasters' => [], 'vectors' => [], 'extent' => null];
         $base = rtrim(config('hwrt.sitemap_url'), '/');
+        // Map refreshes replace files under the same name; version the URL so browser/CDN
+        // caches can never pair stale image bytes with a newer extent.
+        $url = function (string $file) use ($root, $base): string {
+            $full = $root.'/'.$file;
+            $v = is_file($full) ? substr(md5(filemtime($full).':'.filesize($full)), 0, 10) : null;
+
+            return $base.'/'.$file.($v ? '?v='.$v : '');
+        };
         foreach ($m['rasters'] as &$r) {
-            $r['url'] = $base.'/'.$r['file'];
+            $r['url'] = $url($r['file']);
             unset($r['source']);
         }
+        unset($r);
         foreach ($m['vectors'] ?? [] as &$v) {
-            $v['url'] = $base.'/'.$v['file'];
+            $v['url'] = $url($v['file']);
             unset($v['source']);
         }
+        unset($v);
         $m['default_view'] = $this->defaultView();
 
         return $m;
