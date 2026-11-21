@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Area;
 use App\Models\Landmark;
+use App\Models\MapSector;
 use App\Support\Geo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,16 @@ class ImportSitemap extends Command
 
     private const OPTIONAL_FILES = [
         'site-c-roads.geojson' => ['road', '#e2e8f0', false],
+    ];
+
+    /** Polygon collections loaded as admin-editable `map_sectors` (GA areas). */
+    private const SECTOR_FILES = [
+        'ga-areas.geojson' => ['#d336c6', 0.06],
+    ];
+
+    /** Point collections loaded as `landmarks` with marker fields from feature properties. */
+    private const MARKER_FILES = [
+        'site-c-markers.geojson',
     ];
 
     /** First non-blank of the naming fields the PR25 layers use (Layer = CAD layer = structure name). */
@@ -113,8 +124,78 @@ class ImportSitemap extends Command
             return [$nAreas, $nLm];
         });
 
-        $this->info("areas: {$nAreas}, landmarks: {$nLm}");
+        [$nSectors, $nMarkers] = $this->importOverlays($dir);
+
+        $this->info("areas: {$nAreas}, landmarks: {$nLm}, sectors: {$nSectors}, markers: {$nMarkers}");
 
         return self::SUCCESS;
+    }
+
+    /** Optional overlay files: GA polygons -> map_sectors; marker points -> landmarks. */
+    private function importOverlays(string $dir): array
+    {
+        $nSectors = $nMarkers = 0;
+
+        foreach (self::SECTOR_FILES as $file => [$colour, $opacity]) {
+            $fc = $this->readCollection("{$dir}/{$file}");
+            if (! $fc) {
+                continue;
+            }
+            foreach ($fc['features'] as $i => $f) {
+                $name = mb_substr($this->nameFor($f['properties'] ?? []) ?: 'Sector '.($i + 1), 0, 120);
+                MapSector::updateOrCreate(
+                    ['name' => $name],
+                    ['colour' => $colour, 'fill_opacity' => $opacity, 'geometry' => $f['geometry'],
+                        'notes' => $fc['source'] ?? $file, 'sort_order' => $i, 'active' => true],
+                );
+                $nSectors++;
+            }
+        }
+
+        foreach (self::MARKER_FILES as $file) {
+            $fc = $this->readCollection("{$dir}/{$file}");
+            if (! $fc) {
+                continue;
+            }
+            foreach ($fc['features'] as $i => $f) {
+                $p = $f['properties'] ?? [];
+                [$e, $n] = $f['geometry']['coordinates'] ?? [null, null];
+                if (! is_numeric($e) || ! is_numeric($n)) {
+                    continue;
+                }
+                $name = mb_substr($this->nameFor($p) ?: 'Marker '.($i + 1), 0, 120);
+                Landmark::updateOrCreate(
+                    ['category' => (string) ($p['category'] ?? 'marker'), 'name' => $name],
+                    [
+                        'marker_type' => (string) ($p['marker_type'] ?? 'landmark'),
+                        'colour' => (string) ($p['colour'] ?? '#ff5f1f'),
+                        'easting' => (float) $e,
+                        'northing' => (float) $n,
+                        'label_visible' => (bool) ($p['label_visible'] ?? false),
+                        'rotation_deg' => (int) ($p['rotation_deg'] ?? 0),
+                        'source' => $fc['source'] ?? $file,
+                        'active' => true,
+                    ],
+                );
+                $nMarkers++;
+            }
+        }
+
+        return [$nSectors, $nMarkers];
+    }
+
+    private function readCollection(string $path): ?array
+    {
+        if (! is_file($path)) {
+            return null;
+        }
+        $fc = json_decode((string) file_get_contents($path), true);
+        if (! is_array($fc) || ! is_array($fc['features'] ?? null) || ($fc['crs_epsg'] ?? 4326) !== 28350) {
+            $this->warn("skipping invalid overlay file: {$path}");
+
+            return null;
+        }
+
+        return $fc;
     }
 }
