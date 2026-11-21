@@ -28,7 +28,10 @@ class ImportSitemap extends Command
     ];
 
     private const OPTIONAL_FILES = [
-        'site-c-roads.geojson' => ['road', '#e2e8f0', false],
+        // Named road corridors (user map). `site-c-roads.geojson` is the ArcGIS CAD design dump
+        // refreshed by hwrt:map-refresh — kept as a separate kind so it doesn't swamp Site C roads.
+        'site-c-named-roads.geojson' => ['road', '#8d9db5', false],
+        'site-c-roads.geojson' => ['road_design', '#e2e8f0', false],
     ];
 
     /** Polygon collections loaded as admin-editable `map_sectors` (GA areas). */
@@ -98,6 +101,11 @@ class ImportSitemap extends Command
         [$nAreas, $nLm] = DB::transaction(function () use ($collections): array {
             $nAreas = $nLm = 0;
             foreach ($collections as $file => [$fc, $kind, $colour, $landmarks]) {
+                // Road layers are imported wholesale — drop stale rows from previous sources
+                // (e.g. the CAD design dump) so only the current file's geometry survives.
+                if (in_array($kind, ['road', 'road_design'], true)) {
+                    Area::where('kind', $kind)->delete();
+                }
                 foreach ($fc['features'] as $i => $f) {
                     $p = $f['properties'] ?? [];
                     $label = $this->nameFor($p);
