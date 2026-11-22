@@ -212,12 +212,12 @@ window.HwrtMap = (function () {
      * underlying feature never moves. */
     const LABEL_KEY = 'hwrt-label-pos-v1';
     const labelPos = () => { try { return JSON.parse(localStorage.getItem(LABEL_KEY)) || {}; } catch { return {}; } };
-    const draggableLabel = (key, ll, name, cls) => {
+    const draggableLabel = (key, ll, name, cls, extraCss = '') => {
       const saved = labelPos()[key];
       const mk = L.marker(saved ? toLL(saved[0], saved[1]) : ll, {
         icon: L.divIcon({
           className: 'hwrt-label-hit', iconSize: [0, 0], iconAnchor: [0, 0],
-          html: `<div class="${cls}" style="transform:translate(-50%,-50%)">${escHtml(name)}</div>`,
+          html: `<div class="${cls}" style="transform:translate(-50%,-50%);${extraCss}">${escHtml(name)}</div>`,
         }),
         draggable: true, keyboard: false, zIndexOffset: 600,
       });
@@ -235,7 +235,8 @@ window.HwrtMap = (function () {
       const kind = f.properties.kind;
       if (kind === 'road' || kind === 'ga') {
         draggableLabel(`${kind}:${f.properties.name}`, l.getBounds().getCenter(), f.properties.name,
-          kind === 'road' ? 'hwrt-road-label' : 'hwrt-ga-label').addTo(areas);
+          kind === 'road' ? 'hwrt-road-label' : 'hwrt-ga-label',
+          kind === 'ga' ? `color:${styling.ga || f.properties.colour || '#d9f99d'}` : '').addTo(areas);
       } else {
         hoverTip(f, l);
       }
