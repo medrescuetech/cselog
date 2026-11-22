@@ -96,6 +96,8 @@
       $lastError = \App\Models\Setting::value('map.last_error', '');
       $requested = \App\Models\Setting::value('map.refresh_requested_at', '');
       $lastService = \App\Models\Setting::value('map.last_imagery_service', '');
+      $colourRoad = \App\Models\Setting::value('map.colour_road', '');
+      $colourGa = \App\Models\Setting::value('map.colour_ga', '');
     @endphp
 
     <form method="post" action="{{ route('settings.map.update') }}" class="grid gap-3 lg:grid-cols-3">
@@ -119,6 +121,18 @@
         <span class="block text-xs text-slate-400 mb-1">Service URL override (optional)</span>
         <input name="imagery_service_override" value="{{ $override }}" placeholder="Leave blank to auto-discover"
                class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2">
+      </label>
+
+      <label>
+        <span class="block text-xs text-slate-400 mb-1">Road border colour (blank = imported)</span>
+        <input name="colour_road" value="{{ $colourRoad }}" placeholder="#e2e8f0" maxlength="7"
+               class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 font-mono text-sm">
+      </label>
+
+      <label>
+        <span class="block text-xs text-slate-400 mb-1">GA border colour (blank = per-sector)</span>
+        <input name="colour_ga" value="{{ $colourGa }}" placeholder="#38bdf8" maxlength="7"
+               class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 font-mono text-sm">
       </label>
 
       <div class="lg:col-span-3">

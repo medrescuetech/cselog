@@ -33,6 +33,7 @@ window.HwrtMap = (function () {
       .hwrt-ga-label::before { display: none; }
       .hwrt-road-label { background: rgba(226,232,240,.9); color: #0f172a; font-weight: 800;
         font-size: 12px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none; }
+      .hwrt-label-hit div { pointer-events: auto; cursor: move; }
       .hwrt-poi { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
         border-radius: 50%; border: 2px solid #0f172a; color: #fff; font-weight: 800; font-size: 10px;
         box-shadow: 0 0 3px rgba(0,0,0,.6); }
@@ -137,6 +138,7 @@ window.HwrtMap = (function () {
     }
 
     const m = opts.manifest || await fetchJson('/api/layers', 'Map manifest');
+    const styling = m.styling || {};
     if (!m || !Array.isArray(m.rasters) || !m.rasters.length || !validExtent(m.extent)) {
       host.dataset.hwrtMapState = 'error';
       throw new Error('Map manifest does not contain usable raster data.');
@@ -255,7 +257,7 @@ window.HwrtMap = (function () {
     const roads = L.geoJSON(null, {
       coordsToLatLng: c => toLL(c[0], c[1]),
       style: f => ({
-        color: f.properties.colour || '#e2e8f0',
+        color: styling.road || f.properties.colour || '#e2e8f0',
         weight: 1.5,
         fill: false,
       }),
@@ -279,17 +281,40 @@ window.HwrtMap = (function () {
     for (const name of ['Landmarks', 'Road labels', 'Muster points', 'Emergency markers', 'Points of interest']) staticGroup(name);
     staticGroup('Infrastructure labels', false);
 
+    /* Per-browser label positions for sectors and road labels; when unset the label
+     * sits on its original anchor (sector centre / landmark point). Dragging a label
+     * moves only the label — the underlying feature never moves. */
+    const LABEL_KEY = 'hwrt-label-pos-v1';
+    const labelPos = () => { try { return JSON.parse(localStorage.getItem(LABEL_KEY)) || {}; } catch { return {}; } };
+    const draggableLabel = (key, ll, name, cls, extraTransform = '') => {
+      const saved = labelPos()[key];
+      const mk = L.marker(saved ? toLL(saved[0], saved[1]) : ll, {
+        icon: L.divIcon({
+          className: 'hwrt-label-hit', iconSize: [0, 0], iconAnchor: [0, 0],
+          html: `<div class="${cls}" style="transform:translate(-50%,-50%) ${extraTransform};transform-origin:center">${esc(name)}</div>`,
+        }),
+        draggable: true, keyboard: false, zIndexOffset: 600,
+      });
+      mk.on('dragend', () => {
+        const { e, n } = fromLL(mk.getLatLng());
+        const pos = labelPos();
+        pos[key] = [e, n];
+        try { localStorage.setItem(LABEL_KEY, JSON.stringify(pos)); } catch { /* storage unavailable */ }
+      });
+      return mk;
+    };
+
     const sectors = L.geoJSON(null, {
       coordsToLatLng: c => toLL(c[0], c[1]),
       style: f => ({
-        color: f.properties.colour || '#38bdf8',
+        color: styling.ga || f.properties.colour || '#38bdf8',
         weight: 3,
         fill: true,
         fillOpacity: Number.isFinite(Number(f.properties.fill_opacity)) ? Number(f.properties.fill_opacity) : 0.08,
       }),
-      onEachFeature: (f, l) => l.bindTooltip(f.properties.name, {
-        permanent: true, direction: 'center', interactive: false, className: 'hwrt-ga-label',
-      }),
+      onEachFeature: (f, l) => draggableLabel(
+        `sector:${f.properties.name}`, l.getBounds().getCenter(), f.properties.name, 'hwrt-ga-label'
+      ).addTo(sectors),
     });
     if (opts.sectors !== false) sectors.addTo(map);
     overlays['Map sectors'] = sectors;
@@ -312,13 +337,8 @@ window.HwrtMap = (function () {
       if (typeKey === 'road_label') {
         if (lm.label_visible) {
           const rotation = Number(lm.rotation_deg) || 0;
-          const icon = L.divIcon({
-            className: '',
-            iconSize: [0, 0],
-            iconAnchor: [0, 0],
-            html: `<div class="hwrt-road-label" style="transform:translate(-50%,-50%) rotate(${rotation}deg);transform-origin:center">${esc(lm.name)}</div>`,
-          });
-          L.marker(point, { icon, interactive: false }).addTo(group);
+          draggableLabel(`road_label:${lm.name}`, point, lm.name, 'hwrt-road-label', rotation ? `rotate(${rotation}deg)` : '')
+            .addTo(group);
         }
         return null;
       }
