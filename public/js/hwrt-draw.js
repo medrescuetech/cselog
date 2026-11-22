@@ -9,7 +9,7 @@ window.HwrtDraw = (function () {
     const s = document.createElement('style');
     s.id = 'hwrt-draw-styles';
     s.textContent = `
-      .hwrt-draw-ctl { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 4px;
+      .hwrt-draw-ctl { position: relative; bottom: 44px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 4px;
         display: flex; flex-direction: column; gap: 4px; }
       .hwrt-draw-ctl button { background: #0f172a; color: #e2e8f0; border: 1px solid #475569;
         border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; text-align: left; }
@@ -98,7 +98,7 @@ window.HwrtDraw = (function () {
       }
     });
 
-    const ctl = L.control({ position: 'topleft' });
+    const ctl = L.control({ position: 'bottomleft' });
     const ctlEl = L.DomUtil.create('div', 'hwrt-draw-ctl');
     ctl.onAdd = () => ctlEl;
     ctlEl.innerHTML = `
