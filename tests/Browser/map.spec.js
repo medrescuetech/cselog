@@ -104,8 +104,8 @@ test('map visibly renders current site imagery', async ({ page }, testInfo) => {
 
   const centre = await map.evaluate(el => {
     const api = el._hwrtMapApi;
-    const c = api.map.getCenter();
-    return { easting: c.lng, northing: -c.lat };
+    const c = api.fromLL(api.map.getCenter());
+    return { easting: c.e, northing: c.n };
   });
 
   expect(centre.easting).toBeGreaterThanOrEqual(475775.5866);

@@ -1,9 +1,9 @@
 /* HWRT map: Leaflet on CRS.Simple where 1 unit = 1 m of MGA50 (EPSG:28350).
- * latlng = [-northing, easting] (Simple's y grows downward, so northing is negated).
+ * latlng = [northing, easting]; CRS.Simple's transformation (1,0,-1,0) already maps lat up the screen.
  * Layers come from the sitemap manifest (/api/layers); nothing here knows about lat/lng. */
 window.HwrtMap = (function () {
-  const toLL = (e, n) => L.latLng(-Number(n), Number(e));
-  const fromLL = ll => ({ e: ll.lng, n: -ll.lat });
+  const toLL = (e, n) => L.latLng(Number(n), Number(e));
+  const fromLL = ll => ({ e: ll.lng, n: ll.lat });
   const Z = { imagery: 10, prints: 20, plan: 30 };
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const title = value => String(value || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
