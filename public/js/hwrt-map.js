@@ -286,12 +286,12 @@ window.HwrtMap = (function () {
      * moves only the label — the underlying feature never moves. */
     const LABEL_KEY = 'hwrt-label-pos-v1';
     const labelPos = () => { try { return JSON.parse(localStorage.getItem(LABEL_KEY)) || {}; } catch { return {}; } };
-    const draggableLabel = (key, ll, name, cls, extraTransform = '') => {
+    const draggableLabel = (key, ll, name, cls, extraTransform = '', extraCss = '') => {
       const saved = labelPos()[key];
       const mk = L.marker(saved ? toLL(saved[0], saved[1]) : ll, {
         icon: L.divIcon({
           className: 'hwrt-label-hit', iconSize: [0, 0], iconAnchor: [0, 0],
-          html: `<div class="${cls}" style="transform:translate(-50%,-50%) ${extraTransform};transform-origin:center">${esc(name)}</div>`,
+          html: `<div class="${cls}" style="transform:translate(-50%,-50%) ${extraTransform};transform-origin:center;${extraCss}">${esc(name)}</div>`,
         }),
         draggable: true, keyboard: false, zIndexOffset: 600,
       });
@@ -313,7 +313,8 @@ window.HwrtMap = (function () {
         fillOpacity: Number.isFinite(Number(f.properties.fill_opacity)) ? Number(f.properties.fill_opacity) : 0.08,
       }),
       onEachFeature: (f, l) => draggableLabel(
-        `sector:${f.properties.name}`, l.getBounds().getCenter(), f.properties.name, 'hwrt-ga-label'
+        `sector:${f.properties.name}`, l.getBounds().getCenter(), f.properties.name, 'hwrt-ga-label',
+        '', `color:${styling.ga || f.properties.colour || '#d9f99d'}`
       ).addTo(sectors),
     });
     if (opts.sectors !== false) sectors.addTo(map);
