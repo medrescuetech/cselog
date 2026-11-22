@@ -2,7 +2,7 @@
 
 **Product:** HWRT — High Risk Work Tracker
 **Repository:** `medrescuetech/cselog`
-**Deployed version:** `hwrt-v2-install` @ `441da35` (tag `hwrt-v2-working-2026-11-22`)
+**Deployed version:** `hwrt-v2-install` @ `ec3a615` (tag `hwrt-v2-working-2026-11-22`)
 **Purpose:** Record the working dev deployment and the north/south map mirroring fix so
 repeats of the regression are easy to diagnose.
 
@@ -11,9 +11,14 @@ repeats of the regression are easy to diagnose.
 ## 1. Deployment state
 
 - `dev.akgmed.org` docroot: `/home/akgmxkpo/hwrt-v2/public`
-- Server checkout: `~/hwrt-v2`, branch `hwrt-v2-install`, **deployed @ `441da35`**
-  (before: `09ac00d`; the script left a database + `.env` backup under
-  `/home/akgmxkpo/storage/backups/` with a copy in `~/hwrt-backups` — download off-host).
+- Server checkout: `~/hwrt-v2`, branch `hwrt-v2-install`, **deployed @ `ec3a615`**
+  (previously `441da35`, originally `09ac00d`; the script leaves a database + `.env`
+  backup under `/home/akgmxkpo/storage/backups/` with a copy in `~/hwrt-backups` —
+  download off-host).
+- Same-day UI commits on top of `441da35`: `2271883` draw tools to bottom-left +
+  "Hide layers" toggle; `ec3a615` pin hover tooltip shows work type
+  ("type · location · elapsed"). Mirrored on `gmednet-hwrt-v2-continuation` as
+  `a558697` + `1240b53`.
 - Other local checkouts not served by any addon domain: `~/app.akgmed.org` (extracted
   copy, mirrored), `~/csem-review` (`staging/hwrt-v2`, mirrored), `~/hwrt` (V1 `main`).
 - Git tag `hwrt-v2-working-2026-11-22` marks this verified-good state; tag
@@ -34,7 +39,7 @@ Fixes (identical on both work branches):
 
 | Branch | Commits |
 | --- | --- |
-| `hwrt-v2-install` | `4572909` (sign fix), `2b90ccd` (cache-bust `hwrt-map.js` via `?v=filemtime`) |
+| `hwrt-v2-install` | `4572909` (sign fix), `2b90ccd` (cache-bust `hwrt-map.js` via `?v=filemtime`), `beeee19`-equivalent in `sitemap/viewer.html` still open there |
 | `gmednet-hwrt-v2-continuation` | `beeee19` (same fix, plus `sitemap/viewer.html`) |
 
 Any update built from a branch/tag that predates these commits flips the map back —
@@ -64,19 +69,23 @@ git ls-remote --heads origin hwrt-v2-install        # verify outbound GitHub acc
 HWRT_OFFSITE_BACKUP_DIR=$HOME/hwrt-backups ./scripts/update-hwrt.sh
 ```
 
-If GitHub is unreachable, drop `hwrt-v2-install-<from>-to-<to>.bundle` in `~` (a
-`09ac00d→441da35` bundle was generated and used), then:
+If GitHub is unreachable, drop `hwrt-v2-install-<from>-to-<to>.bundle` in `~`
+(bundles used so far: `09ac00d→441da35`, `441da35→ec3a615` — each requires only
+the starting ref, so superseding bundles can be skipped), then:
 
 ```bash
-git remote set-url origin ~/hwrt-v2-install-09ac00d-to-441da35.bundle
+git remote set-url origin ~/hwrt-v2-install-441da35-to-ec3a615.bundle
 HWRT_OFFSITE_BACKUP_DIR=$HOME/hwrt-backups ./scripts/update-hwrt.sh
 git remote set-url origin https://github.com/medrescuetech/cselog.git
 ```
 
+Note: scp from the dev PC timed out on port 22 while interactive SSH worked;
+bundles were uploaded via cPanel File Manager (HTTPS) to `/home/akgmxkpo/` instead.
+
 Post-update verification:
 
 ```bash
-git -C ~/hwrt-v2 log --oneline -1                          # expect 441da35
+git -C ~/hwrt-v2 log --oneline -1                          # expect ec3a615
 grep -n "const toLL" ~/hwrt-v2/public/js/hwrt-map.js       # expect L.latLng(Number(n), ...
 ```
 
