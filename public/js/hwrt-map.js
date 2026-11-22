@@ -6,6 +6,53 @@ window.HwrtMap = (function () {
   const fromLL = ll => ({ e: ll.lng, n: -ll.lat });
   const Z = { imagery: 10, prints: 20, plan: 30 };
 
+  /* Point-of-interest dot styling, keyed on landmark category. */
+  const POI_TYPES = {
+    'ert-pickup': { label: 'ERT Pickup Point', bg: '#2563eb', glyph: 'ERT', small: true },
+    'aed': { label: 'AED', bg: '#dc2626', glyph: '✚' },
+    'first-aid': { label: 'First Aid Kit', bg: '#16a34a', glyph: '✚' },
+    'lv-rescue': { label: 'LV Rescue Kit', bg: '#eab308', glyph: 'LV', small: true },
+    'muster': { label: 'Muster Point', bg: '#22c55e', glyph: 'M' },
+    'obstruction': { label: 'Obstruction', bg: '#f97316', glyph: '!' },
+    'hydration': { label: 'Hydration Station', bg: '#0284c7', glyph: 'H' },
+    'gas-detector': { label: 'Gas Detector', bg: '#14b8a6', glyph: 'G' },
+    'works': { label: 'Works', bg: '#a855f7', glyph: 'W' },
+    'risk': { label: 'Risk / hazard', bg: '#ef4444', glyph: '!' },
+    'other': { label: 'Other', bg: '#ff5f1f', glyph: '•' },
+  };
+
+  function ensureStyles() {
+    if (document.getElementById('hwrt-map-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'hwrt-map-styles';
+    s.textContent = `
+      .hwrt-road-label, .hwrt-ga-label { box-shadow: none; border: none; }
+      .hwrt-road-label::before, .hwrt-ga-label::before { display: none; }
+      .hwrt-road-label { background: rgba(226,232,240,.9); color: #0f172a; font-weight: 800; font-size: 12px; padding: 1px 6px; }
+      .hwrt-ga-label { background: transparent; color: #d9f99d; font-weight: 800; font-size: 13px;
+        text-shadow: 0 0 4px #000, 0 0 2px #000, 0 1px 2px #000; }
+      .hwrt-poi { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+        border-radius: 50%; border: 2px solid #0f172a; color: #fff; font-weight: 800; font-size: 10px;
+        box-shadow: 0 0 3px rgba(0,0,0,.6); }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function landmarkIcon(lm) {
+    const t = POI_TYPES[String(lm.category || '').toLowerCase()] || POI_TYPES.other;
+    return L.divIcon({
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -10],
+      html: `<div class="hwrt-poi" style="background:${t.bg};${t.small ? 'font-size:7px;' : ''}">${t.glyph}</div>`,
+    });
+  }
+
+  const escHtml = v => String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+  })[ch]);
+
   function hostFor(el) {
     return typeof el === 'string' ? document.getElementById(el) : el;
   }
@@ -49,6 +96,7 @@ window.HwrtMap = (function () {
   }
 
   async function create(el, opts = {}) {
+    ensureStyles();
     const host = hostFor(el);
     if (!host) throw new Error('Map container was not found.');
     host.dataset.hwrtMapState = 'loading';
@@ -78,7 +126,7 @@ window.HwrtMap = (function () {
     const map = L.map(host, {
       crs: L.CRS.Simple,
       minZoom: -5,
-      maxZoom: 4,
+      maxZoom: 6,
       zoomSnap: 0.25,
       attributionControl: false,
       maxBounds: L.latLngBounds(
@@ -148,22 +196,46 @@ window.HwrtMap = (function () {
     requestAnimationFrame(() => map.invalidateSize({ pan: false }));
 
     // Optional layers exist immediately so the basemap remains usable if their APIs fail.
+    const coords = { coordsToLatLng: c => toLL(c[0], c[1]) };
+    const areaStyle = f => ({
+      color: f.properties.colour || '#fff',
+      weight: f.properties.kind === 'infrastructure' ? 1 : (f.properties.kind === 'ga' ? 3 : 2),
+      fill: f.properties.kind === 'infrastructure',
+      fillOpacity: f.properties.kind === 'ga' ? 0 : 0.05,
+    });
+    const hoverTip = (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' });
+    // Permanent centred labels for roads and GAs; other kinds keep hover tooltips.
+    const areaLabel = (f, l) => {
+      const kind = f.properties.kind;
+      if (kind === 'road' || kind === 'ga') {
+        l.bindTooltip(f.properties.name, {
+          permanent: true, direction: 'center', interactive: false,
+          className: kind === 'road' ? 'hwrt-road-label' : 'hwrt-ga-label',
+        });
+      } else {
+        hoverTip(f, l);
+      }
+    };
+
     const areas = L.geoJSON(null, {
-      coordsToLatLng: c => toLL(c[0], c[1]),
-      style: f => ({
-        color: f.properties.colour || '#fff',
-        weight: f.properties.kind === 'infrastructure' ? 1 : 2,
-        fill: f.properties.kind === 'infrastructure',
-        fillOpacity: 0.05,
-      }),
-      onEachFeature: (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' }),
+      ...coords, style: areaStyle, onEachFeature: areaLabel,
+      filter: f => f.properties.kind !== 'infrastructure',
     });
     if (opts.areas !== false) areas.addTo(map);
     overlays['Areas & structures'] = areas;
 
-    const landmarks = L.layerGroup();
-    if (opts.landmarks !== false) landmarks.addTo(map);
-    overlays['Landmark labels'] = landmarks;
+    const infraAreas = L.geoJSON(null, {
+      ...coords, style: areaStyle, onEachFeature: hoverTip,
+      filter: f => f.properties.kind === 'infrastructure',
+    });
+    overlays['Named infrastructure'] = infraAreas;
+
+    const pois = L.layerGroup();
+    if (opts.landmarks !== false) pois.addTo(map);
+    overlays['Points of interest'] = pois;
+
+    const infraLandmarks = L.layerGroup();
+    overlays['Infrastructure labels'] = infraLandmarks;
 
     const pins = L.layerGroup().addTo(map);
     overlays['Open entries'] = pins;
@@ -172,10 +244,35 @@ window.HwrtMap = (function () {
       L.control.layers(null, overlays, { collapsed: opts.collapsed ?? true }).addTo(map);
     }
 
+    // Road and GA landmarks are redundant — those names are drawn on the polygons.
+    function addLandmark(lm) {
+      const cat = String(lm.category || '').toLowerCase();
+      if (cat === 'road' || cat === 'ga') return null;
+      const target = cat === 'infrastructure' ? infraLandmarks : pois;
+      const mk = L.marker(toLL(lm.easting, lm.northing), { icon: landmarkIcon(lm), zIndexOffset: 500 })
+        .bindTooltip(escHtml(lm.name), { direction: 'top' });
+      if (opts.poiDelete && lm.id && ['user', 'manual'].includes(String(lm.source || ''))) {
+        mk.bindPopup(`<div><b>${escHtml(lm.name)}</b><br><button type="button" data-del style="margin-top:6px;background:#991b1b;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer">Remove point</button></div>`);
+        mk.on('popupopen', e => {
+          e.popup.getElement().querySelector('[data-del]')?.addEventListener('click', async () => {
+            const r = await fetch(`/api/landmarks/${lm.id}`, {
+              method: 'DELETE',
+              headers: { 'X-CSRF-TOKEN': window.csrf, Accept: 'application/json' },
+            });
+            if (r.ok) mk.remove();
+          });
+        });
+      }
+      mk.addTo(target);
+      return mk;
+    }
+
     const api = {
       map,
       pins,
+      pois,
       overlays,
+      addLandmark,
       toLL,
       fromLL,
       manifest: m,
@@ -192,7 +289,7 @@ window.HwrtMap = (function () {
     if (opts.areas !== false) {
       optionalLoads.push(
         fetchJson('/api/areas', 'Site areas')
-          .then(gj => areas.addData(gj))
+          .then(gj => { areas.addData(gj); infraAreas.addData(gj); })
           .catch(error => {
             console.error('HWRT map: areas unavailable', error);
             notify(host, 'warning', 'Map loaded, but site areas could not be loaded.', error);
@@ -204,17 +301,7 @@ window.HwrtMap = (function () {
     if (opts.landmarks !== false) {
       optionalLoads.push(
         fetchJson('/api/landmarks', 'Landmarks')
-          .then(rows => {
-            for (const lm of rows) {
-              L.circleMarker(toLL(lm.easting, lm.northing), {
-                radius: 3,
-                color: '#fff',
-                weight: 1,
-                fillColor: '#ff5f1f',
-                fillOpacity: 1,
-              }).bindTooltip(lm.name, { direction: 'top' }).addTo(landmarks);
-            }
-          })
+          .then(rows => { for (const lm of rows) addLandmark(lm); })
           .catch(error => {
             console.error('HWRT map: landmarks unavailable', error);
             notify(host, 'warning', 'Map loaded, but landmark labels are unavailable.', error);
@@ -227,18 +314,21 @@ window.HwrtMap = (function () {
     return api;
   }
 
-  /* Pin for an open entry: coloured by work type, ring by age band, dashed if ad-hoc location. */
-  function entryIcon(en) {
+  /* Pin for an open entry: coloured by work type, ring by age band, dashed if ad-hoc location.
+   * `size` is the pin width in px — smaller pins make dense areas easier to read. */
+  function entryIcon(en, size = 24) {
+    const w = size;
+    const h = Math.round(size * 1.4);
     const ring = en.band === 'red' ? '#ef4444' : en.band === 'amber' ? '#f59e0b' : '#ffffff';
     const dash = en.location_id ? '' : 'stroke-dasharray:3 2;';
     return L.divIcon({
       className: 'hwrt-pin',
-      iconSize: [30, 42],
-      iconAnchor: [15, 40],
-      popupAnchor: [0, -36],
-      html: `<svg width="30" height="42" viewBox="0 0 30 42"><path d="M15 41 C15 41 2 24 2 15 A13 13 0 0 1 28 15 C28 24 15 41 15 41Z" fill="${en.colour}" stroke="${ring}" stroke-width="3" style="${dash}"/><circle cx="15" cy="15" r="5" fill="#fff"/></svg>`,
+      iconSize: [w, h],
+      iconAnchor: [w / 2, h - 2],
+      popupAnchor: [0, -h + 4],
+      html: `<svg width="${w}" height="${h}" viewBox="0 0 30 42"><path d="M15 41 C15 41 2 24 2 15 A13 13 0 0 1 28 15 C28 24 15 41 15 41Z" fill="${en.colour}" stroke="${ring}" stroke-width="3" style="${dash}"/><circle cx="15" cy="15" r="5" fill="#fff"/></svg>`,
     });
   }
 
-  return { create, entryIcon, toLL, fromLL, fetchJson };
+  return { create, entryIcon, landmarkIcon, POI_TYPES, toLL, fromLL, fetchJson };
 })();

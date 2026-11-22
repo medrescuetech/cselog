@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
 <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script src="/js/hwrt-map.js"></script>
+<script src="/js/hwrt-draw.js"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }
   .leaflet-container { font: inherit; }
@@ -25,7 +26,26 @@
 <div class="absolute left-3 bottom-3 z-[1000] font-mono text-xs bg-slate-900/90 rounded px-2 py-1" id="coords">E — N —</div>
 <div class="absolute right-3 bottom-3 z-[1000] bg-slate-900/90 rounded px-3 py-2 text-xs flex items-center gap-2">
   <label>plan <input id="planop" type="range" min="0" max="1" step="0.05" value="1" class="align-middle w-28"></label>
+  <label>pin <input id="pinsize" type="range" min="14" max="42" step="1" value="24" class="align-middle w-20"></label>
   <span id="count" class="ml-2 font-semibold"></span>
+</div>
+
+<button id="addpoi" type="button" class="absolute left-14 top-3 z-[1000] rounded-lg bg-slate-900/90 border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">＋ Point</button>
+
+<div id="poi-form" class="hidden absolute left-3 bottom-14 z-[1100] w-72 rounded-lg border border-slate-600 bg-slate-900/95 p-3 text-sm space-y-2">
+  <div class="font-semibold">Add map point</div>
+  <label class="block text-xs text-slate-400">Type
+    <select id="poi-type" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1.5"></select>
+  </label>
+  <label class="block text-xs text-slate-400">Name
+    <input id="poi-name" maxlength="120" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1.5">
+  </label>
+  <div id="poi-coords" class="font-mono text-[11px] text-slate-400"></div>
+  <div id="poi-error" class="hidden text-red-400 text-xs"></div>
+  <div class="flex gap-2 pt-1">
+    <button id="poi-save" type="button" class="flex-1 rounded bg-emerald-600 hover:bg-emerald-500 px-3 py-2 font-semibold">Save</button>
+    <button id="poi-cancel" type="button" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-2">Cancel</button>
+  </div>
 </div>
 @endsection
 
@@ -53,8 +73,69 @@
   try {
     if (!window.L) throw new Error('Leaflet did not load. Check network/CDN access.');
 
-    const cm = await HwrtMap.create('map', { collapsed: false });
+    const cm = await HwrtMap.create('map', { collapsed: false, poiDelete: true });
     const { map, pins, toLL, fromLL } = cm;
+
+    if (window.HwrtDraw) HwrtDraw.attach(cm);
+
+    // --- POI quick-add ---
+    const addBtn = document.getElementById('addpoi');
+    const poiForm = document.getElementById('poi-form');
+    const typeSel = document.getElementById('poi-type');
+    const nameEl = document.getElementById('poi-name');
+    const errEl = document.getElementById('poi-error');
+    let poiMode = false, poiPoint = null;
+
+    for (const [key, t] of Object.entries(HwrtMap.POI_TYPES)) {
+      const o = document.createElement('option');
+      o.value = key; o.textContent = t.label;
+      typeSel.appendChild(o);
+    }
+    typeSel.value = 'muster';
+
+    const setPoiMode = on => {
+      poiMode = on;
+      addBtn.classList.toggle('bg-amber-700', on);
+      map.getContainer().style.cursor = on ? 'crosshair' : '';
+      if (!on) { poiForm.classList.add('hidden'); errEl.classList.add('hidden'); }
+    };
+    addBtn.addEventListener('click', () => setPoiMode(!poiMode));
+    map.on('click', e => {
+      if (!poiMode) return;
+      poiPoint = fromLL(e.latlng);
+      document.getElementById('poi-coords').textContent = `E ${poiPoint.e.toFixed(1)}  N ${poiPoint.n.toFixed(1)}  MGA50`;
+      if (!nameEl.value) nameEl.value = HwrtMap.POI_TYPES[typeSel.value]?.label || '';
+      poiForm.classList.remove('hidden');
+    });
+    typeSel.addEventListener('change', () => {
+      const labels = Object.values(HwrtMap.POI_TYPES).map(t => t.label);
+      if (!nameEl.value || labels.includes(nameEl.value)) nameEl.value = HwrtMap.POI_TYPES[typeSel.value].label;
+    });
+    document.getElementById('poi-cancel').addEventListener('click', () => setPoiMode(false));
+    document.getElementById('poi-save').addEventListener('click', async () => {
+      errEl.classList.add('hidden');
+      const r = await fetch('/api/landmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrf, Accept: 'application/json' },
+        body: JSON.stringify({ name: nameEl.value, category: typeSel.value, easting: poiPoint.e, northing: poiPoint.n }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        errEl.textContent = j.message || 'Could not save point.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      cm.addLandmark(j);
+      nameEl.value = '';
+      setPoiMode(false);
+    });
+
+    // --- adjustable entry pin size ---
+    let pinSize = +document.getElementById('pinsize').value;
+    document.getElementById('pinsize').addEventListener('input', e => {
+      pinSize = +e.target.value;
+      for (const mk of markers.values()) mk.setIcon(HwrtMap.entryIcon(mk._en, pinSize));
+    });
 
     document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
     map.on('mousemove', e => {
@@ -96,14 +177,15 @@
           let mk = markers.get(en.id);
           if (!mk) {
             mk = L.marker(toLL(en.easting, en.northing), {
-              icon: HwrtMap.entryIcon(en),
+              icon: HwrtMap.entryIcon(en, pinSize),
               zIndexOffset: 1000,
             }).addTo(pins);
             markers.set(en.id, mk);
           } else {
-            mk.setIcon(HwrtMap.entryIcon(en));
+            mk.setIcon(HwrtMap.entryIcon(en, pinSize));
           }
-          mk.bindTooltip(`${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -36] });
+          mk._en = en;
+          mk.bindTooltip(`${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -Math.round(pinSize * 1.4)] });
           mk.bindPopup(popup(en));
         }
         for (const [id, mk] of markers) {

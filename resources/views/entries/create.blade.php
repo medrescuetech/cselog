@@ -118,6 +118,9 @@
   <div x-show="pinOpen" x-cloak class="fixed inset-0 z-50 bg-slate-950 flex flex-col">
     <div class="flex items-center gap-3 p-3 bg-slate-900 border-b border-slate-800">
       <div class="flex-1 font-semibold">Tap the map to place the pin, drag to adjust</div>
+      <label class="flex items-center gap-2 text-xs text-slate-400 whitespace-nowrap">Pin size
+        <input type="range" min="12" max="48" x-model.number="pinSize" @input="if (marker) marker.setIcon(pinIcon())" class="w-24">
+      </label>
       <div class="font-mono text-xs text-slate-400" x-text="pin.e ? `E ${pin.e.toFixed(1)} N ${pin.n.toFixed(1)}` : ''"></div>
       <button type="button" @click="pinOpen = false" class="px-3 py-2 rounded bg-slate-800">Cancel</button>
     </div>
@@ -151,7 +154,7 @@ function logForm(types) {
     selectedType() { return this.types.find(t => Number(t.id) === Number(this.workTypeId)) || null; },
     clock: '', late: false, planned: false, openedAt: '', plannedStart: '',
     q: '', results: [], picked: null, adhoc: {},
-    pinOpen: false, pin: { e: null, n: null, name: '', area: null, nearby: [], error: '' }, mapObj: null, marker: null,
+    pinOpen: false, pin: { e: null, n: null, name: '', area: null, nearby: [], error: '' }, mapObj: null, marker: null, pinSize: 20,
     init() {
       const fmtPerth = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Perth', hour: '2-digit', minute: '2-digit', hour12: false });
       const perthLocalValue = d => {
@@ -174,16 +177,26 @@ function logForm(types) {
       this.pinOpen = true; this.pin = { e: null, n: null, name: this.q, area: null, nearby: [], error: '' };
       await this.$nextTick();
       if (!this.mapObj) {
-        this.mapObj = await HwrtMap.create('pinmap', { skipPrints: true });
+        this.mapObj = await HwrtMap.create('pinmap', { skipPrints: true, leaflet: { maxZoom: 8 } });
         this.mapObj.map.on('click', ev => this.place(this.mapObj.fromLL(ev.latlng)));
       } else { this.mapObj.map.invalidateSize(); }
       if (this.marker) { this.marker.remove(); this.marker = null; }
     },
+    pinIcon() {
+      const w = this.pinSize, h = Math.round(w * 1.4);
+      return L.divIcon({
+        className: 'hwrt-pin',
+        iconSize: [w, h],
+        iconAnchor: [w / 2, h - 2],
+        html: `<svg width="${w}" height="${h}" viewBox="0 0 30 42"><path d="M15 41 C15 41 2 24 2 15 A13 13 0 0 1 28 15 C28 24 15 41 15 41Z" fill="#ef4444" stroke="#fff" stroke-width="3"/><circle cx="15" cy="15" r="5" fill="#fff"/></svg>`,
+      });
+    },
     async place({ e, n }) {
       this.pin.e = e; this.pin.n = n;
       const ll = this.mapObj.toLL(e, n);
+      if (this.mapObj.map.getZoom() < 2) this.mapObj.map.setView(ll, 2);
       if (!this.marker) {
-        this.marker = L.marker(ll, { draggable: true }).addTo(this.mapObj.map);
+        this.marker = L.marker(ll, { draggable: true, icon: this.pinIcon() }).addTo(this.mapObj.map);
         this.marker.on('dragend', () => this.place(this.mapObj.fromLL(this.marker.getLatLng())));
       } else this.marker.setLatLng(ll);
       const r = await fetch(`/api/locations/nearby?easting=${e}&northing=${n}`).then(r => r.json());

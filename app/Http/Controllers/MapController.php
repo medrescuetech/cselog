@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Landmark;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Rule;
 
 class MapController extends Controller
 {
@@ -36,7 +38,35 @@ class MapController extends Controller
     public function landmarks()
     {
         return response()->json(Landmark::where('active', true)->orderBy('name')
-            ->get(['id', 'name', 'category', 'easting', 'northing']));
+            ->get(['id', 'name', 'category', 'easting', 'northing', 'source']));
+    }
+
+    /** Quick-add a point of interest (ERT pickup, AED, muster point, obstruction, …). */
+    public function storePoi(Request $request)
+    {
+        $data = $request->validate([
+            'name' => [
+                'required', 'string', 'max:120',
+                Rule::unique('landmarks', 'name')
+                    ->where(fn ($q) => $q->where('category', $request->input('category'))),
+            ],
+            'category' => 'required|string|max:60',
+            'easting' => 'required|numeric',
+            'northing' => 'required|numeric',
+        ]);
+
+        $lm = Landmark::create([...$data, 'source' => 'user', 'active' => true]);
+
+        return response()->json($lm->only(['id', 'name', 'category', 'easting', 'northing', 'source']), 201);
+    }
+
+    public function destroyPoi(Landmark $landmark)
+    {
+        // Only user-placed points can be removed here; imported data is managed via settings/refresh.
+        abort_unless(in_array($landmark->source, ['user', 'manual']), 403);
+        $landmark->delete();
+
+        return response()->json(['deleted' => true]);
     }
 
     private function manifest(): array

@@ -27,7 +27,19 @@
       <label class="block"><span class="text-xs text-slate-400">Name</span>
         <input name="name" required maxlength="120" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
       <label class="block"><span class="text-xs text-slate-400">Category</span>
-        <input name="category" value="manual" maxlength="60" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
+        <input name="category" value="manual" maxlength="60" list="poi-categories" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>
+      <datalist id="poi-categories">
+        <option value="ert-pickup">ERT Pickup Point</option>
+        <option value="aed">AED</option>
+        <option value="first-aid">First Aid Kit</option>
+        <option value="lv-rescue">LV Rescue Kit</option>
+        <option value="muster">Muster Point</option>
+        <option value="obstruction">Obstruction</option>
+        <option value="hydration">Hydration Station</option>
+        <option value="gas-detector">Gas Detector</option>
+        <option value="works">Works</option>
+        <option value="risk">Risk / hazard</option>
+      </datalist>
       <div class="grid grid-cols-2 gap-2">
         <label><span class="text-xs text-slate-400">Easting</span>
           <input name="easting" x-model="e" required type="number" step="0.001" class="mt-1 w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2"></label>

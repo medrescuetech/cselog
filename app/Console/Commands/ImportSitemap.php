@@ -24,7 +24,7 @@ class ImportSitemap extends Command
         'project-development-envelope.geojson' => ['boundary', '#ffd400', false],
         'lease-boundaries.geojson' => ['lease', '#00b0ff', false],
         'project-boundaries-infrastructure.geojson' => ['infrastructure', '#ff5f1f', true],
-        'ga-areas.geojson' => ['ga', '#d336c6', true],
+        'ga-areas.geojson' => ['ga', '#a3e635', true],
         'site-c-roads.geojson' => ['road', '#8d9db5', true],
     ];
 
@@ -94,7 +94,7 @@ class ImportSitemap extends Command
                     if ($landmarks) {
                         [$e, $n] = Geo::centroid($f['geometry']);
                         Landmark::updateOrCreate(
-                            ['category' => 'infrastructure', 'name' => $name],
+                            ['category' => $kind, 'name' => $name],
                             ['easting' => $e, 'northing' => $n, 'source' => $fc['source'] ?? $file, 'active' => true],
                         );
                         $nLm++;
