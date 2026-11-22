@@ -56,7 +56,7 @@ class UserManagementTest extends TestCase
         $this->assertNull($user->email);
         $this->assertSame('user', $user->role);
         $this->assertTrue($user->active);
-        $this->assertTrue($user->must_change_password);
+        $this->assertFalse($user->must_change_password);
         $this->assertTrue(Hash::check('StrongPassword123!', $user->password));
     }
 
@@ -83,7 +83,7 @@ class UserManagementTest extends TestCase
         $this->assertSame('Updated User', $user->name);
         $this->assertSame('updated.user', $user->username);
         $this->assertFalse($user->active);
-        $this->assertTrue($user->must_change_password);
+        $this->assertFalse($user->must_change_password);
         $this->assertTrue(Hash::check('ReplacementPassword123!', $user->password));
     }
 

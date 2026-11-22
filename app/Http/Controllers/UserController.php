@@ -47,7 +47,6 @@ class UserController extends Controller
         $data['email'] = blank($data['email'] ?? null) ? null : strtolower($data['email']);
         $data['username'] = strtolower($data['username']);
 
-        $data['must_change_password'] = true;
         User::create($data);
 
         return redirect()->route('settings.users.index')
@@ -79,8 +78,6 @@ class UserController extends Controller
 
         if (blank($data['password'] ?? null)) {
             unset($data['password']);
-        } else {
-            $data['must_change_password'] = true;
         }
 
         $error = DB::transaction(function () use ($request, $user, $data): ?string {
