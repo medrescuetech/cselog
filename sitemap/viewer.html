@@ -21,9 +21,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // One flat coordinate system: Leaflet CRS.Simple where x = MGA50 easting (m), y = northing (m).
-// Leaflet's Simple CRS has y increasing downwards, so northing is negated: latlng = [-N, E].
-const toLL = (e, n) => L.latLng(-n, e);
-const fromLL = ll => ({ e: ll.lng, n: -ll.lat });
+// Leaflet's Simple CRS transformation (1,0,-1,0) already maps lat up the screen, so latlng = [N, E].
+const toLL = (e, n) => L.latLng(n, e);
+const fromLL = ll => ({ e: ll.lng, n: ll.lat });
 
 fetch('manifest.json').then(r => r.json()).then(async m => {
   const ext = m.extent;
