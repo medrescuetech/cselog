@@ -35,6 +35,7 @@
 </div>
 
 <button id="addpoi" type="button" class="absolute left-14 top-3 z-[1000] rounded-lg bg-slate-900/90 border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">＋ Point</button>
+<button id="hidelayers" type="button" class="absolute right-3 bottom-14 z-[1000] rounded-lg bg-slate-900/90 border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">Hide layers ▴</button>
 
 <div id="poi-form" class="hidden absolute left-3 bottom-14 z-[1100] w-72 rounded-lg border border-slate-600 bg-slate-900/95 p-3 text-sm space-y-2">
   <div class="font-semibold">Add map point</div>
@@ -140,6 +141,16 @@
       pinSize = +e.target.value;
       for (const mk of markers.values()) mk.setIcon(HwrtMap.entryIcon(mk._en, pinSize));
     });
+
+    // --- layers panel hide/show ---
+    const hideBtn = document.getElementById('hidelayers');
+    const layersPanel = () => map.getContainer().querySelector('.leaflet-control-layers');
+    const setLayersHidden = hidden => {
+      hideBtn.textContent = hidden ? 'Show layers ▾' : 'Hide layers ▴';
+      const p = layersPanel();
+      if (p) p.style.display = hidden ? 'none' : '';
+    };
+    hideBtn.addEventListener('click', () => setLayersHidden(layersPanel()?.style.display !== 'none'));
 
     document.getElementById('planop').addEventListener('input', e => cm.setPlanOpacity(+e.target.value));
     document.getElementById('reset-view').addEventListener('click', () => cm.home());
