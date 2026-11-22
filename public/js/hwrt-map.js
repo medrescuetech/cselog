@@ -30,7 +30,8 @@ window.HwrtMap = (function () {
       .hwrt-road-label::before, .hwrt-ga-label::before { display: none; }
       .hwrt-road-label { background: rgba(226,232,240,.9); color: #0f172a; font-weight: 800; font-size: 12px; padding: 1px 6px; }
       .hwrt-label-hit div { pointer-events: auto; cursor: move; }
-      .hwrt-ga-label { background: transparent; color: #d9f99d; font-weight: 800; font-size: 13px;
+      .hwrt-ga-label { background: rgba(15,23,42,.82); color: #d9f99d; font-weight: 800; font-size: 13px;
+        padding: 1px 6px; border-radius: 3px; white-space: nowrap;
         text-shadow: 0 0 4px #000, 0 0 2px #000, 0 1px 2px #000; }
       .hwrt-poi { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
         border-radius: 50%; border: 2px solid #0f172a; color: #fff; font-weight: 800; font-size: 10px;
