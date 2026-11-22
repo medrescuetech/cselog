@@ -437,4 +437,91 @@ class HwrtV2Test extends TestCase
             'source_ref' => '1',
         ]);
     }
+
+    public function test_user_can_add_and_remove_poi_landmarks(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+
+        $response = $this->actingAs($user)->postJson('/api/landmarks', [
+            'name' => 'Hydration Station A',
+            'marker_type' => 'hydration',
+            'easting' => 476300,
+            'northing' => 7718500,
+        ]);
+        $response->assertCreated()
+            ->assertJsonFragment([
+                'name' => 'Hydration Station A',
+                'marker_type' => 'hydration',
+                'category' => 'poi',
+                'colour' => '#0284c7',
+                'source' => 'user',
+            ]);
+
+        $landmark = Landmark::where('name', 'Hydration Station A')->firstOrFail();
+        $this->assertSame('user', $landmark->source);
+        $this->assertSame('poi', $landmark->category);
+        $this->assertFalse($landmark->label_visible);
+        $this->assertTrue($landmark->active);
+
+        $this->actingAs($user)->postJson('/api/landmarks', [
+            'name' => 'Not A Real Type',
+            'marker_type' => 'portal',
+            'easting' => 476300,
+            'northing' => 7718500,
+        ])->assertUnprocessable();
+
+        $this->actingAs($user)->postJson('/api/landmarks', [
+            'name' => 'Hydration Station A',
+            'marker_type' => 'hydration',
+            'easting' => 476310,
+            'northing' => 7718510,
+        ])->assertUnprocessable();
+
+        $this->actingAs($user)
+            ->deleteJson("/api/landmarks/{$landmark->id}")
+            ->assertOk()
+            ->assertJson(['deleted' => true]);
+        $this->assertDatabaseMissing('landmarks', ['id' => $landmark->id]);
+    }
+
+    public function test_user_cannot_delete_non_user_landmarks(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $landmark = Landmark::create([
+            'name' => 'Manual Marker',
+            'category' => 'manual',
+            'marker_type' => 'landmark',
+            'colour' => '#ff5f1f',
+            'easting' => 476300,
+            'northing' => 7718500,
+            'active' => true,
+            'label_visible' => false,
+            'rotation_deg' => 0,
+            'source' => 'manual',
+        ]);
+
+        $this->actingAs($user)
+            ->deleteJson("/api/landmarks/{$landmark->id}")
+            ->assertForbidden();
+        $this->assertDatabaseHas('landmarks', ['id' => $landmark->id]);
+    }
+
+    public function test_admin_settings_store_accepts_poi_marker_type(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->post('/settings/landmarks', [
+            'name' => 'Hydration Station B',
+            'category' => 'poi',
+            'marker_type' => 'hydration',
+            'colour' => '#0284c7',
+            'easting' => 476300,
+            'northing' => 7718500,
+            'active' => '1',
+            'label_visible' => '0',
+            'rotation_deg' => '0',
+        ])->assertRedirect();
+
+        $this->assertSame('hydration', Landmark::where('name', 'Hydration Station B')->firstOrFail()->marker_type);
+    }
 }

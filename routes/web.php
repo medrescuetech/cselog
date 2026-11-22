@@ -53,6 +53,8 @@ Route::middleware(['auth', 'password.changed', 'role:user'])->group(function () 
     Route::get('/api/layers', [MapController::class, 'layers'])->name('api.layers');
     Route::get('/api/areas', [MapController::class, 'areas'])->name('api.areas');
     Route::get('/api/landmarks', [MapController::class, 'landmarks'])->name('api.landmarks');
+    Route::post('/api/landmarks', [MapController::class, 'storePoi'])->name('api.landmarks.store');
+    Route::delete('/api/landmarks/{landmark}', [MapController::class, 'destroyPoi'])->name('api.landmarks.destroy');
     Route::get('/api/map-sectors', [MapController::class, 'sectors'])->name('api.map-sectors');
     Route::get('/api/locations', [LocationController::class, 'search'])->name('api.locations');
     Route::post('/api/locations', [LocationController::class, 'store'])->name('api.locations.store');

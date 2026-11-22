@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # (glob relative to ROOT, group, title, default_visible, opacity)
 LAYER_RULES = [
-    ("imagery/basemap-nearmap-*_L15_1m.jpg", "imagery", "Whole site — Nearmap Oct 2023 (1 m/px)", True, 1.0),
+    ("imagery/basemap-nearmap-*_L15_1m.jpg", "imagery", "Whole site — Nearmap Oct 2023 (1 m/px)", False, 1.0),
     ("imagery/site-cf-*_L17_0.25m.jpg", "imagery", "Site C & F — current drone imagery (0.25 m/px)", True, 1.0),
     ("imagery/site-cf-*_L16_0.5m.jpg", "imagery", "Site C & F — current drone imagery (0.5 m/px, light)", False, 1.0),
     ("plan/plotplan-overall-*.png", "plan", "Plot plan — Overall (Saipem 2025)", True, 1.0),
@@ -27,7 +27,7 @@ LAYER_RULES = [
 VECTORS = [
     ("features/project-development-envelope.geojson", "Project development envelope", True),
     ("features/lease-boundaries.geojson", "Lease boundaries", False),
-    ("features/project-boundaries-infrastructure.geojson", "Named infrastructure (142)", True),
+    ("features/project-boundaries-infrastructure.geojson", "Named infrastructure (142)", False),
     ("features/cadastre.geojson", "Cadastre (context)", False),
     ("features/site-c-roads.geojson", "Site C roads", True),
 ]

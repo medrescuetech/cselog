@@ -36,7 +36,7 @@ class ImportSitemap extends Command
 
     /** Polygon collections loaded as admin-editable `map_sectors` (GA areas). */
     private const SECTOR_FILES = [
-        'ga-areas.geojson' => ['#d336c6', 0.06],
+        'ga-areas.geojson' => ['#a3e635', 0.0],
     ];
 
     /** Point collections loaded as `landmarks` with marker fields from feature properties. */

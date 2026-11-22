@@ -29,7 +29,7 @@
         "ymin": 7716479.225913286
       },
       "transparent": false,
-      "default_visible": true,
+      "default_visible": false,
       "opacity": 1.0,
       "source": "https://tiles-ap1.arcgis.com/oOhFjgN0cUEZBHqy/arcgis/rest/services/NEARMAP_BurrupTilesCombined_Raster/MapServer"
     },
@@ -224,7 +224,7 @@
     {
       "file": "features/project-boundaries-infrastructure.geojson",
       "title": "Named infrastructure (142)",
-      "default_visible": true,
+      "default_visible": false,
       "crs": "EPSG:28350"
     },
     {

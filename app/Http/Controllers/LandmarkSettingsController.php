@@ -10,20 +10,12 @@ use Illuminate\Validation\ValidationException;
 
 class LandmarkSettingsController extends Controller
 {
-    private const MARKER_TYPES = [
-        'landmark' => 'Landmark',
-        'road_label' => 'Road label',
-        'muster_point' => 'Muster point',
-        'emergency' => 'Emergency marker',
-        'custom' => 'Custom marker',
-    ];
-
     public function index()
     {
         return view('settings.landmarks', [
             'landmarks' => Landmark::query()->orderByDesc('active')->orderBy('category')->orderBy('name')->get(),
             'sectors' => MapSector::query()->orderByDesc('active')->orderBy('sort_order')->orderBy('name')->get(),
-            'markerTypes' => self::MARKER_TYPES,
+            'markerTypes' => Landmark::MARKER_TYPES,
         ]);
     }
 
@@ -73,7 +65,7 @@ class LandmarkSettingsController extends Controller
                     ->ignore($landmark?->id),
             ],
             'category' => 'nullable|string|max:60',
-            'marker_type' => ['required', Rule::in(array_keys(self::MARKER_TYPES))],
+            'marker_type' => ['required', Rule::in(array_keys(Landmark::MARKER_TYPES))],
             'colour' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'easting' => 'required|numeric',
             'northing' => 'required|numeric',

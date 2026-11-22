@@ -6,7 +6,9 @@ use App\Models\Area;
 use App\Models\Landmark;
 use App\Models\MapSector;
 use App\Models\Setting;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Rule;
 
 class MapController extends Controller
 {
@@ -38,7 +40,46 @@ class MapController extends Controller
     public function landmarks()
     {
         return response()->json(Landmark::where('active', true)->orderBy('category')->orderBy('name')
-            ->get(['id', 'name', 'category', 'marker_type', 'colour', 'label_visible', 'rotation_deg', 'notes', 'easting', 'northing']));
+            ->get(['id', 'name', 'category', 'marker_type', 'colour', 'label_visible', 'rotation_deg', 'notes', 'easting', 'northing', 'source']));
+    }
+
+    /** Quick-add a point of interest (ERT pickup, AED, muster point, obstruction, …). */
+    public function storePoi(Request $request)
+    {
+        $data = $request->validate([
+            'name' => [
+                'required', 'string', 'max:120',
+                Rule::unique('landmarks', 'name')
+                    ->where(fn ($q) => $q->where('marker_type', $request->input('marker_type'))),
+            ],
+            'marker_type' => ['required', Rule::in(array_keys(Landmark::POI_TYPES))],
+            'easting' => 'required|numeric',
+            'northing' => 'required|numeric',
+        ]);
+
+        $lm = Landmark::create([
+            ...$data,
+            'category' => 'poi',
+            'colour' => Landmark::POI_TYPES[$data['marker_type']][1],
+            'label_visible' => false,
+            'rotation_deg' => 0,
+            'source' => 'user',
+            'active' => true,
+        ]);
+
+        return response()->json($lm->only([
+            'id', 'name', 'category', 'marker_type', 'colour', 'label_visible',
+            'rotation_deg', 'notes', 'easting', 'northing', 'source',
+        ]), 201);
+    }
+
+    public function destroyPoi(Landmark $landmark)
+    {
+        // Only user-placed points can be removed here; imported/manual data is managed via settings.
+        abort_unless($landmark->source === 'user', 403);
+        $landmark->delete();
+
+        return response()->json(['deleted' => true]);
     }
 
     public function sectors()
