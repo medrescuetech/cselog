@@ -224,7 +224,7 @@
             mk.setIcon(HwrtMap.entryIcon(en, pinSize));
           }
           mk._en = en;
-          mk.bindTooltip(`${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -Math.round(pinSize * 1.4)] });
+          mk.bindTooltip(`${en.type_display || en.type} · ${en.location} · ${fmtElapsed(en.elapsed_s)}`, { direction: 'top', offset: [0, -Math.round(pinSize * 1.4)] });
           mk.bindPopup(popup(en));
         }
         for (const [id, mk] of markers) {
