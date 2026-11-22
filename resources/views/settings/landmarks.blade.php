@@ -3,7 +3,7 @@
 @push('head')
 <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
 <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
-<script src="/js/hwrt-map.js"></script>
+<script src="/js/hwrt-map.js?v={{ filemtime(public_path('js/hwrt-map.js')) }}"></script>
 <script src="{{ asset('js/hwrt-colour-picker.js') }}"></script>
 <style>#landmark-map{height:480px}</style>
 @endpush

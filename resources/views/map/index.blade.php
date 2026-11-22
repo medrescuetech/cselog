@@ -4,7 +4,7 @@
 @push('head')
 <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
 <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
-<script src="/js/hwrt-map.js"></script>
+<script src="/js/hwrt-map.js?v={{ filemtime(public_path('js/hwrt-map.js')) }}"></script>
 <style>
   #map { position: absolute; inset: 0; background: #0f172a; }
   .leaflet-container { font: inherit; }
