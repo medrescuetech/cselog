@@ -30,10 +30,10 @@
   <span id="count" class="ml-2 font-semibold"></span>
 </div>
 
-<button id="addpoi" type="button" class="absolute left-14 top-3 z-[1000] rounded-lg bg-slate-900/90 border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">＋ Point</button>
+<button id="addpoi" type="button" class="hidden absolute left-14 top-3 z-[1000] rounded-lg bg-slate-900/90 border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">＋ Point</button>
 <button id="hidelayers" type="button" class="absolute right-3 bottom-14 z-[1000] rounded-lg bg-slate-900/90 border border-slate-600 px-3 py-2 text-xs font-semibold hover:bg-slate-800">Hide layers ▴</button>
 
-<div id="poi-form" class="hidden absolute left-3 bottom-14 z-[1100] w-72 rounded-lg border border-slate-600 bg-slate-900/95 p-3 text-sm space-y-2">
+<div id="poi-form" class="hidden absolute left-3 bottom-72 z-[1100] w-72 rounded-lg border border-slate-600 bg-slate-900/95 p-3 text-sm space-y-2">
   <div class="font-semibold">Add map point</div>
   <label class="block text-xs text-slate-400">Type
     <select id="poi-type" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1.5"></select>
@@ -81,6 +81,14 @@
 
     // --- POI quick-add ---
     const addBtn = document.getElementById('addpoi');
+    // Fold the + Point button into the draw control stack (bottom-left); keep it
+    // floating top-left if the draw tools failed to load.
+    const drawCtlEl = map.getContainer().querySelector('.hwrt-draw-ctl');
+    addBtn.classList.remove('hidden');
+    if (drawCtlEl) {
+      addBtn.className = '';
+      drawCtlEl.insertBefore(addBtn, drawCtlEl.querySelector('input[type=color]'));
+    }
     const poiForm = document.getElementById('poi-form');
     const typeSel = document.getElementById('poi-type');
     const nameEl = document.getElementById('poi-name');

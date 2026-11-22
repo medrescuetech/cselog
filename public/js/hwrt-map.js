@@ -29,6 +29,7 @@ window.HwrtMap = (function () {
       .hwrt-road-label, .hwrt-ga-label { box-shadow: none; border: none; }
       .hwrt-road-label::before, .hwrt-ga-label::before { display: none; }
       .hwrt-road-label { background: rgba(226,232,240,.9); color: #0f172a; font-weight: 800; font-size: 12px; padding: 1px 6px; }
+      .hwrt-label-hit div { pointer-events: auto; cursor: move; }
       .hwrt-ga-label { background: transparent; color: #d9f99d; font-weight: 800; font-size: 13px;
         text-shadow: 0 0 4px #000, 0 0 2px #000, 0 1px 2px #000; }
       .hwrt-poi { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
@@ -108,6 +109,7 @@ window.HwrtMap = (function () {
     }
 
     const m = opts.manifest || await fetchJson('/api/layers', 'Map manifest');
+    const styling = m.styling || {};
     if (!m || !Array.isArray(m.rasters) || !m.rasters.length || !validExtent(m.extent)) {
       host.dataset.hwrtMapState = 'error';
       throw new Error('Map manifest does not contain usable raster data.');
@@ -198,20 +200,42 @@ window.HwrtMap = (function () {
     // Optional layers exist immediately so the basemap remains usable if their APIs fail.
     const coords = { coordsToLatLng: c => toLL(c[0], c[1]) };
     const areaStyle = f => ({
-      color: f.properties.colour || '#fff',
+      color: (f.properties.kind === 'road' && styling.road) || (f.properties.kind === 'ga' && styling.ga) || f.properties.colour || '#fff',
       weight: f.properties.kind === 'infrastructure' ? 1 : (f.properties.kind === 'ga' ? 3 : 2),
       fill: f.properties.kind === 'infrastructure',
       fillOpacity: f.properties.kind === 'ga' ? 0 : 0.05,
     });
     const hoverTip = (f, l) => l.bindTooltip(f.properties.name, { sticky: true, direction: 'top' });
-    // Permanent centred labels for roads and GAs; other kinds keep hover tooltips.
+
+    /* Per-browser label positions for roads and GAs; when unset the label sits on its
+     * original anchor (feature centre). Dragging a label moves only the label — the
+     * underlying feature never moves. */
+    const LABEL_KEY = 'hwrt-label-pos-v1';
+    const labelPos = () => { try { return JSON.parse(localStorage.getItem(LABEL_KEY)) || {}; } catch { return {}; } };
+    const draggableLabel = (key, ll, name, cls) => {
+      const saved = labelPos()[key];
+      const mk = L.marker(saved ? toLL(saved[0], saved[1]) : ll, {
+        icon: L.divIcon({
+          className: 'hwrt-label-hit', iconSize: [0, 0], iconAnchor: [0, 0],
+          html: `<div class="${cls}" style="transform:translate(-50%,-50%)">${escHtml(name)}</div>`,
+        }),
+        draggable: true, keyboard: false, zIndexOffset: 600,
+      });
+      mk.on('dragend', () => {
+        const { e, n } = fromLL(mk.getLatLng());
+        const pos = labelPos();
+        pos[key] = [e, n];
+        try { localStorage.setItem(LABEL_KEY, JSON.stringify(pos)); } catch { /* storage unavailable */ }
+      });
+      return mk;
+    };
+
+    // Draggable centred labels for roads and GAs; other kinds keep hover tooltips.
     const areaLabel = (f, l) => {
       const kind = f.properties.kind;
       if (kind === 'road' || kind === 'ga') {
-        l.bindTooltip(f.properties.name, {
-          permanent: true, direction: 'center', interactive: false,
-          className: kind === 'road' ? 'hwrt-road-label' : 'hwrt-ga-label',
-        });
+        draggableLabel(`${kind}:${f.properties.name}`, l.getBounds().getCenter(), f.properties.name,
+          kind === 'road' ? 'hwrt-road-label' : 'hwrt-ga-label').addTo(areas);
       } else {
         hoverTip(f, l);
       }

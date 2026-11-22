@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Landmark;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
@@ -82,6 +83,11 @@ class MapController extends Controller
             $v['url'] = $base.'/'.$v['file'];
             unset($v['source']);
         }
+        // Optional layer colour overrides from Settings → Map (blank = use feature colour).
+        $m['styling'] = [
+            'road' => Setting::value('map.colour_road', ''),
+            'ga' => Setting::value('map.colour_ga', ''),
+        ];
 
         return $m;
     }

@@ -34,7 +34,7 @@ class ImportSitemap extends Command
         foreach (['RefName', 'Layer', 'Lease', 'Name', 'NAME', 'Description'] as $k) {
             $v = trim(preg_replace('/\s+/', ' ', (string) ($p[$k] ?? '')));
             if ($v !== '') {
-                return ucwords(strtolower($v));
+                return preg_replace('/^ga(?=\d)/i', 'GA', ucwords(strtolower($v)));
             }
         }
 
