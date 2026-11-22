@@ -28,8 +28,9 @@ window.HwrtMap = (function () {
     const s = document.createElement('style');
     s.id = 'hwrt-map-styles';
     s.textContent = `
-      .hwrt-ga-label { background: transparent; border: none; box-shadow: none; color: #d9f99d;
-        font-weight: 800; font-size: 13px; text-shadow: 0 0 4px #000, 0 0 2px #000, 0 1px 2px #000; }
+      .hwrt-ga-label { background: rgba(15,23,42,.82); border: none; box-shadow: none; color: #d9f99d;
+        font-weight: 800; font-size: 13px; text-shadow: 0 0 4px #000, 0 0 2px #000, 0 1px 2px #000;
+        padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
       .hwrt-ga-label::before { display: none; }
       .hwrt-road-label { background: rgba(226,232,240,.9); color: #0f172a; font-weight: 800;
         font-size: 12px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none; }
